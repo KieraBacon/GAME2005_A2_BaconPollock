@@ -1,0 +1,66 @@
+#pragma once
+#ifndef __FREEBODY__
+#define __FREEBODY__
+
+#include "DisplayObject.h"
+#include <vector>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+#include "Label.h"
+
+struct DisplayForce
+{
+	DisplayForce(std::string name, glm::vec2 head, const glm::vec2& origin, glm::vec4& colour, float& scale, float& arrowScale, float& arrowHead);
+	DisplayForce(const DisplayForce& base);
+	void operator=(const DisplayForce& rhs);
+	~DisplayForce();
+	void draw();
+
+	std::string name;
+	glm::vec2 head;
+
+	const glm::vec2& origin;
+	const glm::vec4& colour;
+	const float& m_fScale;
+	const float& m_fArrowScale;
+	const float& m_fArrowHead;
+	Label m_pLabel;
+};
+
+
+class FreeBody : public DisplayObject
+{
+public:
+	FreeBody();
+	virtual ~FreeBody();
+
+	// Inherited via GameObject
+	virtual void draw() override;
+	virtual void update() override;
+	virtual void clean() override;
+
+	virtual void addForce(std::string name, glm::vec2 force);
+	virtual void addForceComponent(std::string name, glm::vec2 forceComponent);
+	virtual glm::vec2 getNetForce();
+	virtual float getScale();
+	virtual void setScale(float scale);
+	virtual float getArrowScale();
+	virtual void setArrowScale(float scale);
+	virtual float getArrowAngle();
+	virtual void setArrowAngle(float angle);
+	bool showForces;
+	bool showComponents;
+	bool showNetForce;
+private:
+	std::vector<DisplayForce> m_vForces;
+	std::vector<DisplayForce> m_vForceComponents;
+	DisplayForce* m_pNetForce;
+	glm::vec4 m_ForceColour;
+	glm::vec4 m_ComponentColour;
+	glm::vec4 m_NetColour;
+	float m_fScale;
+	float m_fArrowScale;
+	float m_fArrowHead;
+};
+
+#endif /* defined (__FREEBODY__) */
