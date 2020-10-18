@@ -41,6 +41,7 @@ private:
 	FreeBody* m_pFreeBody;
 	glm::vec2 gravity;
 	bool m_playerFacingRight;
+	bool draggingMouse;
 
 	// UI Items
 	Button* m_pBackButton;

@@ -10,9 +10,8 @@
 
 struct DisplayForce
 {
-	DisplayForce(std::string name, glm::vec2 head, const glm::vec2& origin, glm::vec4& colour, float& scale, float& arrowScale, float& arrowHead);
+	DisplayForce(std::string name, glm::vec2 head, const glm::vec2& origin, int size, glm::vec4& colour, float& scale, float extender, float& arrowScale, float& arrowHead);
 	DisplayForce(const DisplayForce& base);
-	void operator=(const DisplayForce& rhs);
 	~DisplayForce();
 	void draw();
 
@@ -24,6 +23,7 @@ struct DisplayForce
 	const float& m_fScale;
 	const float& m_fArrowScale;
 	const float& m_fArrowHead;
+	float extender;
 	Label m_pLabel;
 };
 
@@ -48,6 +48,8 @@ public:
 	virtual void setArrowScale(float scale);
 	virtual float getArrowAngle();
 	virtual void setArrowAngle(float angle);
+	virtual int getLabelSize();
+	virtual void setLabelSize(int size);
 	bool showForces;
 	bool showComponents;
 	bool showNetForce;
@@ -61,6 +63,7 @@ private:
 	float m_fScale;
 	float m_fArrowScale;
 	float m_fArrowHead;
+	int m_iLabelSize;
 };
 
 #endif /* defined (__FREEBODY__) */

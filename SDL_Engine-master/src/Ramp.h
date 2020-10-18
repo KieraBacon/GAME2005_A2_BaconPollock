@@ -23,12 +23,13 @@ public:
 	float length;
 	glm::vec2 slope;
 	float angle;
-	char painting;
 
 	void calcPositions();
 	void calcTrig();
 	void clampPositions();
 
+	unsigned char painting;
+	int paintStyle;
 private:
 	bool clampBounds(glm::vec2& position, const glm::vec2& slope, const glm::vec4& screenBounds);
 };

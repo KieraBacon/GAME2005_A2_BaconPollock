@@ -41,41 +41,51 @@ void PlayScene::clean()
 
 void PlayScene::handleEvents()
 {
-	static bool dragging = false;
-
 	EventManager::Instance().update();
-	if(m_pFirstRamp->painting > 0)
+	if(m_pFirstRamp->painting)
 	{
-		if(dragging)
+		if(m_pFirstRamp->paintStyle == 0)
 		{
-			if(m_pFirstRamp->painting == 1)
+			if(EventManager::Instance().getMouseButtonDown(0))
 			{
+				draggingMouse = true;
 				m_pFirstRamp->startPosition = EventManager::Instance().getMousePosition();
 			}
-			else if(m_pFirstRamp->painting == 2)
+			else if(EventManager::Instance().getMouseButtonUp(0))
+			{
+				draggingMouse = false;
+				m_pFirstRamp->painting = 0;
+			}
+
+			if(draggingMouse)
 			{
 				m_pFirstRamp->endPosition = EventManager::Instance().getMousePosition();
-			}
-
-			m_pFirstRamp->calcTrig();
-			setBoxToStartingPosition();
-
-			if(EventManager::Instance().getMouseButtonUp(0))
-			{
-				dragging = false;
-				if(m_pFirstRamp->painting == 1)
-				{
-					m_pFirstRamp->painting = 2;
-				}
-				else if(m_pFirstRamp->painting == 2)
-				{
-					m_pFirstRamp->painting = 0;
-				}
+				m_pFirstRamp->calcTrig();
+				setBoxToStartingPosition();
 			}
 		}
-		else if(EventManager::Instance().getMouseButtonDown(0))
+		else if(m_pFirstRamp->paintStyle == 1)
 		{
-			dragging = true;
+			if(EventManager::Instance().getMouseButtonDown(0))
+			{
+				draggingMouse = true;
+			}
+			else if(EventManager::Instance().getMouseButtonUp(0))
+			{
+				draggingMouse = false;
+				++m_pFirstRamp->painting %= 3; // Increment it, then if it's now 2 set it to 0.
+			}
+
+			if(draggingMouse)
+			{
+				if(m_pFirstRamp->painting == 1)
+					m_pFirstRamp->startPosition = EventManager::Instance().getMousePosition();
+				else if(m_pFirstRamp->painting == 2)
+					m_pFirstRamp->endPosition = EventManager::Instance().getMousePosition();
+
+				m_pFirstRamp->calcTrig();
+				setBoxToStartingPosition();
+			}
 		}
 	}
 
@@ -155,6 +165,8 @@ void PlayScene::handleEvents()
 
 void PlayScene::start()
 {
+	draggingMouse = false;
+
 	gravity = { 0.0f, 9.8f };
 
 	// Set GUI Title
@@ -278,7 +290,7 @@ void PlayScene::checkCollisions()
 		}
 		else
 		{
-			m_pBox->getFreeBody().addForce("g", gravity);
+			m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
 			m_pBox->getRigidBody()->isColliding = false;
 		}
 	}
@@ -304,32 +316,28 @@ void PlayScene::GUI_Function() const
 	ImGui::SameLine();
 	
 	static ImVec4 paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_Button);
-	//colors[ImGuiCol_Button] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
-	//colors[ImGuiCol_ButtonHovered] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-	//colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
 	if(m_pFirstRamp->painting == 0)
 		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_Button);
-	if(m_pFirstRamp->painting == 1)
+	else if(m_pFirstRamp->painting == 1)
+		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+	else if(m_pFirstRamp->painting == 2)
 	{
 		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
 		paintButtonColour.x = (paintButtonColour.x + 1.0f) * 0.5f;
-		paintButtonColour.y = (paintButtonColour.y + 0.0f) * 0.5f;
-		paintButtonColour.z = (paintButtonColour.z + 0.0f) * 0.5f;
-	}
-	if(m_pFirstRamp->painting == 2)
-	{
-		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
-		paintButtonColour.x = (paintButtonColour.x + 2.0f) * 0.33f;
-		paintButtonColour.y = (paintButtonColour.y + 0.0f) * 0.33f;
-		paintButtonColour.z = (paintButtonColour.z + 0.0f) * 0.33f;
+		paintButtonColour.y = (paintButtonColour.y + 1.0f) * 0.5f;
+		paintButtonColour.z = (paintButtonColour.z + 1.0f) * 0.5f;
 	}
 	ImGui::PushStyleColor(ImGuiCol_Button, paintButtonColour);
-	if(ImGui::Button("Paint Incline"))
+	if(ImGui::Button("Paint Ramp"))
 	{
 		m_pFirstRamp->painting = 1;
 	}
 
 	ImGui::PopStyleColor();
+
+	ImGui::SameLine(0.0f, 1.0f);
+	ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.1f);
+	if(ImGui::SliderInt("##paintStyle", &m_pFirstRamp->paintStyle, 0, 1, ""));
 
 	ImGui::Separator();
 
@@ -370,20 +378,26 @@ void PlayScene::GUI_Function() const
 			m_pBox->getFreeBody().setArrowScale(arrowScale);
 		}
 
+		static int labelSize = m_pBox->getFreeBody().getLabelSize();
+		if(ImGui::SliderInt("Label Size##LabelSize", &labelSize, 0, 32))
+		{
+			m_pBox->getFreeBody().setLabelSize(labelSize);
+		}
+
 		ImGui::Separator();
 	}
 
 	if(ImGui::CollapsingHeader("Simulation Parameters", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
-		if(ImGui::SliderFloat("##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
+		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
 		{
 			m_pFirstRamp->calcPositions();
 			setBoxToStartingPosition();
 		}
-		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
+		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.34f);
 		ImGui::SameLine();
-		if(ImGui::SliderFloat("##Angle", &m_pFirstRamp->angle, -180.0f, 180.0f))
+		if(ImGui::SliderFloat("Angle##Angle", &m_pFirstRamp->angle, -180.0f, 180.0f))
 		{
 			m_pFirstRamp->calcPositions();
 			setBoxToStartingPosition();

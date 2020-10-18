@@ -11,7 +11,9 @@ Ramp::Ramp()
 	getRigidBody()->isColliding = false;
 	setWidth(50);
 	setType(TARGET);
+
 	painting = 0;
+	paintStyle = 0;
 }
 
 Ramp::~Ramp() = default;
