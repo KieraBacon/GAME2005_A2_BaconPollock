@@ -40,10 +40,12 @@ private:
 	Plane* m_pPlaneSprite;
 	Player* m_pPlayer;
 	Box* m_pBox;
+	bool m_bCheckCollisionOfWholeBox;
 	FreeBody* m_pFreeBody;
 	glm::vec2 gravity;
 	bool m_playerFacingRight;
 	bool draggingMouse;
+	
 
 	// UI Items
 	Button* m_pBackButton;

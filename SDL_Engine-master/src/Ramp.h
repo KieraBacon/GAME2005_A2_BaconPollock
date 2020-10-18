@@ -17,7 +17,9 @@ public:
 	virtual void clean() override;
 
 public:
-	glm::vec4 colour;
+	glm::vec4 slopeColour;
+	glm::vec4 boundColour;
+	glm::vec4 fillColour;
 	glm::vec2 startPosition;
 	glm::vec2 endPosition;
 	float length;
@@ -32,6 +34,7 @@ public:
 	bool painted[2];
 	unsigned char painting;
 	int paintStyle;
+	
 private:
 	bool clampBounds(glm::vec2& position, const glm::vec2& slope, const glm::vec4& screenBounds);
 };

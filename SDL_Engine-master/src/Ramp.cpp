@@ -1,10 +1,13 @@
 #include "Ramp.h"
 #include "Util.h"
 #include "glm/trigonometric.hpp"
+#include "Renderer.h"
 
 Ramp::Ramp()
 {
-	colour = { 0.0f, 0.0f, 0.0f, 1.0f };
+	slopeColour = { 0.0f, 0.0f, 0.0f, 1.0f };
+	boundColour = { 0.0f, 0.0f, 0.0f, 0.75f };
+	fillColour = { 0.0f, 0.0f, 0.0f, 0.25f };
 	getTransform()->position = glm::vec2(0.0f, 0.0f);
 	getRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
 	getRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
@@ -21,21 +24,38 @@ Ramp::~Ramp() = default;
 
 void Ramp::draw()
 {
-	Util::DrawLine(startPosition, endPosition, colour);
+	if(true)
+	{
+		int xmin = (startPosition.x <= endPosition.x ? startPosition.x : endPosition.x);
+		int ymin = (startPosition.y <= endPosition.y ? startPosition.y : endPosition.y);
+		int xmax = (startPosition.x >= endPosition.x ? startPosition.x : endPosition.x);
+		int ymax = (startPosition.y >= endPosition.y ? startPosition.y : endPosition.y);
+		const auto renderer = Renderer::Instance()->getRenderer();
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+		SDL_SetRenderDrawColor(renderer, fillColour.x * 255.0f, fillColour.y * 255.0f, fillColour.z * 255.0f, fillColour.w * 255.0f);
+		for(int y = ymin; y <= ymax; ++y)
+		{
+			for(int x = xmin; x <= xmax; ++x)
+			{
+				auto A = (startPosition.x >= endPosition.x ? endPosition : startPosition);
+				auto B = (startPosition.x >= endPosition.x ? startPosition : endPosition);
+				if(((B.x - A.x) * (y - A.y) - (B.y - A.y) * (x - A.x)) > 0.0f) // Credit to users Regexident and Eric Bainville from https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line.
+					SDL_RenderDrawPoint(renderer, x, y);
+			}
+		}
+	}
+
+	Util::DrawLine(startPosition, endPosition, slopeColour);
 	if(startPosition.y >= endPosition.y)
 	{
-		Util::DrawLine(endPosition, glm::vec2(endPosition.x, startPosition.y), colour);
-		Util::DrawLine(glm::vec2(endPosition.x, startPosition.y), startPosition, colour);
+		Util::DrawLine(endPosition, glm::vec2(endPosition.x, startPosition.y), boundColour);
+		Util::DrawLine(glm::vec2(endPosition.x, startPosition.y), startPosition, boundColour);
 	}
 	else
 	{
-		Util::DrawLine(startPosition, glm::vec2(startPosition.x, endPosition.y), colour);
-		Util::DrawLine(glm::vec2(startPosition.x, endPosition.y), endPosition, colour);
+		Util::DrawLine(startPosition, glm::vec2(startPosition.x, endPosition.y), boundColour);
+		Util::DrawLine(glm::vec2(startPosition.x, endPosition.y), endPosition, boundColour);
 	}
-
-	//int x = (startPosition.x <= endPosition.x ? startPosition.x : endPosition.x);
-	//int y = (startPosition.y <= endPosition.y ? startPosition.y : endPosition.y);
-	//while()
 }
 
 void Ramp::update()

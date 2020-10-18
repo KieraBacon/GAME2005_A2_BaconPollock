@@ -19,6 +19,14 @@ PlayScene::~PlayScene()
 
 void PlayScene::draw()
 {
+	const auto renderer = Renderer::Instance()->getRenderer();
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	SDL_Rect bottomFill = { 0, m_pSecondRamp->endPosition.y, 800, 600 - m_pSecondRamp->endPosition.y };
+	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->boundColour.x * 255.0f, m_pSecondRamp->boundColour.y * 255.0f, m_pSecondRamp->boundColour.z * 255.0f, m_pSecondRamp->boundColour.w * 255.0f);
+	SDL_RenderDrawRect(renderer, &bottomFill);
+	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->fillColour.x * 255.0f, m_pSecondRamp->fillColour.y * 255.0f, m_pSecondRamp->fillColour.z * 255.0f, m_pSecondRamp->fillColour.w * 255.0f);
+	SDL_RenderFillRect(renderer, &bottomFill);
+
 	if(EventManager::Instance().isIMGUIActive())
 	{
 		GUI_Function();
@@ -184,6 +192,7 @@ void PlayScene::handleEvents()
 void PlayScene::start()
 {
 	draggingMouse = false;
+	m_bCheckCollisionOfWholeBox = false;
 
 	gravity = { 0.0f, 9.8f };
 
@@ -308,40 +317,61 @@ void PlayScene::checkCollisions()
 {
 	if(true)
 	{
+		Ramp* collider = nullptr;
+
 		m_pBox->getFreeBody().clean();
-		if(CollisionManager::lineAngledRectCheck(
-			m_pFirstRamp->startPosition,
-			m_pFirstRamp->endPosition,
-			m_pBox->getTransform()->position,
-			m_pBox->getWidth(),
-			m_pBox->getHeight(),
-			m_pBox->getAngle()
-		))
+		m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
+
+		m_pBox->getRigidBody()->isColliding = false;
+		if(m_bCheckCollisionOfWholeBox) // This doesn't really seem to work anyway
 		{
-			m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
-			auto m = m_pBox->getRigidBody()->mass;
+			if(CollisionManager::lineAngledRectCheck(m_pSecondRamp->startPosition, m_pSecondRamp->endPosition,
+				m_pBox->getTransform()->position, m_pBox->getWidth(), m_pBox->getHeight(), m_pBox->getAngle()))
+			{
+				m_pBox->getRigidBody()->isColliding = true;
+				collider = m_pSecondRamp;
+			}
+			else if(CollisionManager::lineAngledRectCheck(m_pFirstRamp->startPosition, m_pFirstRamp->endPosition,
+				m_pBox->getTransform()->position, m_pBox->getWidth(), m_pBox->getHeight(), m_pBox->getAngle()))
+			{
+				m_pBox->getRigidBody()->isColliding = true;
+				collider = m_pFirstRamp;
+			}
+		}
+		else
+		{
+			// Obviously this doesn't work at all, lol
+			m_pBox->getRigidBody()->isColliding = true;
+			if(Util::distance(m_pBox->getTransform()->position, m_pFirstRamp->getTransform()->position) <
+				Util::distance(m_pBox->getTransform()->position, m_pSecondRamp->getTransform()->position))
+				collider = m_pFirstRamp;
+			else
+				collider = m_pSecondRamp;
+		}
+		
+		if(collider != nullptr && m_pBox->getRigidBody()->isColliding)
+		{
 			// Find the components of gravity which are parallel and perpendicular to the slope of the ramp
-			float sa = glm::atan(m_pFirstRamp->slope.y / m_pFirstRamp->slope.x);
-			float na = glm::atan(m_pFirstRamp->slope.x / -m_pFirstRamp->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
+			// Step 1: Find the angles which are parallel to and perpendicular to the slope
+			float sa = glm::atan(collider->slope.y / collider->slope.x);
+			float na = glm::atan(collider->slope.x / -collider->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
 			if(na < 0)
 				na += glm::pi<float>(); // This hack ensures that the perpendicular line is always facing downward.
+
+			// Step 2: Obtain the magnitudes of the component vectors
 			float FgparaMag = gravity.y * m_pBox->getRigidBody()->mass * glm::sin(sa); // The magnitude of the component of gravity which is parallel to the incline plane
 			float FgperpMag = gravity.y * m_pBox->getRigidBody()->mass * glm::cos(sa); // The magnitude of the component of gravity which is perpendicular to the incline plane
-			glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) };
+			
+			// Step 3: Rotate the component magnitudes according to the angles
+			glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) }; // The vector visual representation to push to the freebody for drawing.
 			glm::vec2 FgperpVec = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
 			m_pBox->getFreeBody().addForceComponent("g", FgparaVec);
 			m_pBox->getFreeBody().addForceComponent("g", FgperpVec);
 
-			// Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
+			// Step 4: Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
 			na -= glm::pi<float>();
 			glm::vec2 normal = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
 			m_pBox->getFreeBody().addForce("n", normal);
-			m_pBox->getRigidBody()->isColliding = true;
-		}
-		else
-		{
-			m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
-			m_pBox->getRigidBody()->isColliding = false;
 		}
 	}
 }
