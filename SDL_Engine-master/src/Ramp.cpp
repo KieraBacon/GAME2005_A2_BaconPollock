@@ -12,6 +12,7 @@ Ramp::Ramp()
 	setWidth(50);
 	setType(TARGET);
 
+	painted[0] = painted[1] = true;
 	painting = 0;
 	paintStyle = 0;
 }
@@ -21,6 +22,20 @@ Ramp::~Ramp() = default;
 void Ramp::draw()
 {
 	Util::DrawLine(startPosition, endPosition, colour);
+	if(startPosition.y >= endPosition.y)
+	{
+		Util::DrawLine(endPosition, glm::vec2(endPosition.x, startPosition.y), colour);
+		Util::DrawLine(glm::vec2(endPosition.x, startPosition.y), startPosition, colour);
+	}
+	else
+	{
+		Util::DrawLine(startPosition, glm::vec2(startPosition.x, endPosition.y), colour);
+		Util::DrawLine(glm::vec2(startPosition.x, endPosition.y), endPosition, colour);
+	}
+
+	//int x = (startPosition.x <= endPosition.x ? startPosition.x : endPosition.x);
+	//int y = (startPosition.y <= endPosition.y ? startPosition.y : endPosition.y);
+	//while()
 }
 
 void Ramp::update()
@@ -39,16 +54,24 @@ void Ramp::calcPositions()
 	endPosition += slope * (length * 0.5f);
 
 	clampPositions();
+	setStartOnTop();
 }
 
 void Ramp::calcTrig()
 {
 	length = Util::distance(startPosition, endPosition);
-	slope = Util::normalize(glm::vec2((endPosition.x - startPosition.x), (endPosition.y - startPosition.y)));
+	if(startPosition.y >= endPosition.y)
+		slope = Util::normalize(glm::vec2((endPosition.x - startPosition.x), (endPosition.y - startPosition.y)));
+	else
+		slope = Util::normalize(glm::vec2((startPosition.x - endPosition.x), (startPosition.y - endPosition.y)));
 	angle = glm::degrees(glm::atan(-slope.y / slope.x));
+	if(angle < 0.0f)
+		angle += 180.0f;
 
 	getTransform()->position.x = startPosition.x + (endPosition.x - startPosition.x) * 0.5f;
 	getTransform()->position.y = startPosition.y + (endPosition.y - startPosition.y) * 0.5f;
+
+	setStartOnTop();
 }
 
 void Ramp::clampPositions()
@@ -57,6 +80,16 @@ void Ramp::clampPositions()
 	if(clampBounds(startPosition, slope, screen) &&
 		clampBounds(endPosition, slope, screen))
 		calcTrig();
+}
+
+void Ramp::setStartOnTop()
+{
+	if(painting == 0 && startPosition.y >= endPosition.y)
+	{
+		glm::vec2 temp = endPosition;
+		endPosition = startPosition;
+		startPosition = temp;
+	}
 }
 
 bool Ramp::clampBounds(glm::vec2 & position, const glm::vec2 & slope, const glm::vec4 & screenBounds)

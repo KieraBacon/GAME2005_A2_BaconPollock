@@ -42,7 +42,7 @@ void PlayScene::clean()
 void PlayScene::handleEvents()
 {
 	EventManager::Instance().update();
-	if(m_pFirstRamp->painting)
+	if(m_pFirstRamp->painting > 0)
 	{
 		if(m_pFirstRamp->paintStyle == 0)
 		{
@@ -50,18 +50,23 @@ void PlayScene::handleEvents()
 			{
 				draggingMouse = true;
 				m_pFirstRamp->startPosition = EventManager::Instance().getMousePosition();
+				++m_pFirstRamp->painting;
 			}
 			else if(EventManager::Instance().getMouseButtonUp(0))
 			{
 				draggingMouse = false;
 				m_pFirstRamp->painting = 0;
+				m_pFirstRamp->calcTrig();
+				setBoxToHigherPosition();
+				setSecondRampToLowerPosition();
 			}
 
 			if(draggingMouse)
 			{
 				m_pFirstRamp->endPosition = EventManager::Instance().getMousePosition();
 				m_pFirstRamp->calcTrig();
-				setBoxToStartingPosition();
+				setBoxToHigherPosition();
+				setSecondRampToLowerPosition();
 			}
 		}
 		else if(m_pFirstRamp->paintStyle == 1)
@@ -73,7 +78,19 @@ void PlayScene::handleEvents()
 			else if(EventManager::Instance().getMouseButtonUp(0))
 			{
 				draggingMouse = false;
-				++m_pFirstRamp->painting %= 3; // Increment it, then if it's now 2 set it to 0.
+				if(m_pFirstRamp->painting == 1) // Just finished painting the start position
+				{
+					m_pFirstRamp->painted[0] = true;
+					m_pFirstRamp->painting = (m_pFirstRamp->painted[1] == true ? 0 : 2);
+				}
+				else if(m_pFirstRamp->painting == 2) // Just finished painting the end position
+				{
+					m_pFirstRamp->painted[1] = true;
+					m_pFirstRamp->painting = (m_pFirstRamp->painted[0] == true ? 0 : 1);
+				}
+				m_pFirstRamp->calcTrig();
+				setBoxToHigherPosition();
+				setSecondRampToLowerPosition();
 			}
 
 			if(draggingMouse)
@@ -84,7 +101,8 @@ void PlayScene::handleEvents()
 					m_pFirstRamp->endPosition = EventManager::Instance().getMousePosition();
 
 				m_pFirstRamp->calcTrig();
-				setBoxToStartingPosition();
+				setBoxToHigherPosition();
+				setSecondRampToLowerPosition();
 			}
 		}
 	}
@@ -172,11 +190,10 @@ void PlayScene::start()
 	// Set GUI Title
 	m_guiTitle = "Play Scene";
 
-	// Ramp
+	// First Ramp
 	m_pFirstRamp = new Ramp();
 	addChild(m_pFirstRamp);
 	m_pFirstRamp->getTransform()->position = { 400.0f, 300.0f };
-	m_pFirstRamp->getTransform()->position.y += m_pFirstRamp->getWidth();
 	{
 		float rise = -30;
 		float run = 40;
@@ -185,13 +202,18 @@ void PlayScene::start()
 		m_pFirstRamp->calcTrig();
 	}
 
+	// Second Ramp
+	m_pSecondRamp = new Ramp();
+	addChild(m_pSecondRamp);
+	setSecondRampToLowerPosition();
+
 	// Box
 	m_pBox = new Box();
 	addChild(m_pBox);
 	m_pBox->setScale(0.75f);
 	m_pBox->getFreeBody().setScale(0.5f);
 	m_pBox->getFreeBody().setArrowScale(10.0f);
-	setBoxToStartingPosition();
+	setBoxToHigherPosition();
 
 	//// Back Button
 	//m_pBackButton = new Button("../Assets/textures/backButton.png", "backButton", BACK_BUTTON);
@@ -241,16 +263,44 @@ void PlayScene::start()
 	addChild(m_pInstructionsLabel);
 }
 
-void PlayScene::setBoxToStartingPosition() const
+void PlayScene::setBoxToHigherPosition() const
 {
+	if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
+	{
+		m_pBox->getTransform()->position = { m_pFirstRamp->endPosition.x + m_pBox->getWidth() * 0.0f, m_pFirstRamp->endPosition.y - m_pBox->getHeight() * 0.0f };
+		// If start position is lower than end position, then set the alpha to 128 only if end position is the one you're dragging.
+		m_pBox->alpha = (draggingMouse && m_pFirstRamp->painting == 2 ? 128 : 255);
+	}
+	else
+	{
+		m_pBox->getTransform()->position = { m_pFirstRamp->startPosition.x + m_pBox->getWidth() * 0.0f, m_pFirstRamp->startPosition.y - m_pBox->getHeight() * 0.0f };
+		// If start position is higher than end position, then set the alpha to 128 only if start position is the one you're dragging.
+		m_pBox->alpha = (draggingMouse && m_pFirstRamp->painting == 1 ? 128 : 255);
+	}
+
 	m_pBox->runningSim = false;
-	m_pBox->getTransform()->position = { m_pFirstRamp->startPosition.x + m_pBox->getWidth() * 0.0f, m_pFirstRamp->startPosition.y - m_pBox->getHeight() * 0.0f };
 	m_pBox->getTransform()->rotation = m_pFirstRamp->slope;
 	m_pBox->getRigidBody()->acceleration = { 0.0f, 0.0f };
 	m_pBox->getRigidBody()->velocity = { 0.0f, 0.0f };
 	m_pBox->getRigidBody()->mass = 12.8f;
 	m_pBox->getRigidBody()->isColliding = false;
 	m_pBox->getFreeBody().clean();
+}
+
+void PlayScene::setSecondRampToLowerPosition() const
+{
+	if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
+	{
+		m_pSecondRamp->startPosition = m_pFirstRamp->startPosition;
+		m_pSecondRamp->endPosition = { (m_pFirstRamp->startPosition.x >= m_pFirstRamp->endPosition.x ? 800.0f : 0.0f), m_pFirstRamp->startPosition.y };
+	}
+	else
+	{
+		m_pSecondRamp->startPosition = m_pFirstRamp->endPosition;
+		m_pSecondRamp->endPosition = { (m_pFirstRamp->endPosition.x >= m_pFirstRamp->startPosition.x ? 800.0f : 0.0f), m_pFirstRamp->endPosition.y };
+	}
+
+	m_pSecondRamp->calcTrig();
 }
 
 #include "Util.h"
@@ -310,7 +360,8 @@ void PlayScene::GUI_Function() const
 
 	if(ImGui::Button("Start Simulation"))
 	{
-		setBoxToStartingPosition();
+		setBoxToHigherPosition();
+		setSecondRampToLowerPosition();
 		m_pBox->runningSim = true;
 	}
 	ImGui::SameLine();
@@ -318,9 +369,9 @@ void PlayScene::GUI_Function() const
 	static ImVec4 paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_Button);
 	if(m_pFirstRamp->painting == 0)
 		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_Button);
-	else if(m_pFirstRamp->painting == 1)
+	else if(m_pFirstRamp->painted[0] + m_pFirstRamp->painted[1] == 0)
 		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
-	else if(m_pFirstRamp->painting == 2)
+	else if(m_pFirstRamp->painted[0] + m_pFirstRamp->painted[1] == 1)
 	{
 		paintButtonColour = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
 		paintButtonColour.x = (paintButtonColour.x + 1.0f) * 0.5f;
@@ -331,6 +382,8 @@ void PlayScene::GUI_Function() const
 	if(ImGui::Button("Paint Ramp"))
 	{
 		m_pFirstRamp->painting = 1;
+		m_pFirstRamp->painted[0] = false;
+		m_pFirstRamp->painted[1] = false;
 	}
 
 	ImGui::PopStyleColor();
@@ -357,7 +410,8 @@ void PlayScene::GUI_Function() const
 		if(ImGui::SliderFloat("Box Scale##BoxScale", &boxScale, 0.25f, 2.5f))
 		{
 			m_pBox->setScale(boxScale);
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 		ImGui::SameLine();
 		static float freebodyScale = m_pBox->getFreeBody().getScale();
@@ -393,39 +447,49 @@ void PlayScene::GUI_Function() const
 		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
 		{
 			m_pFirstRamp->calcPositions();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.34f);
 		ImGui::SameLine();
-		if(ImGui::SliderFloat("Angle##Angle", &m_pFirstRamp->angle, -180.0f, 180.0f))
+		if(ImGui::SliderFloat("Angle##Angle", &m_pFirstRamp->angle, 179.999f, 0.001f))
 		{
 			m_pFirstRamp->calcPositions();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
 		if(ImGui::SliderFloat("x##startX", &m_pFirstRamp->startPosition.x, 0.0f, 800.0f))
 		{
 			m_pFirstRamp->calcTrig();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 		ImGui::SameLine();
 		if(ImGui::SliderFloat("y##startY", &m_pFirstRamp->startPosition.y, 0.0f, 600.0f))
 		{
+			if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
+				m_pFirstRamp->endPosition.y = m_pFirstRamp->startPosition.y + 0.001f;
 			m_pFirstRamp->calcTrig();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 
 		if(ImGui::SliderFloat("x##endX", &m_pFirstRamp->endPosition.x, 0.0f, 800.0f))
 		{
 			m_pFirstRamp->calcTrig();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 		ImGui::SameLine();
 		if(ImGui::SliderFloat("y##endY", &m_pFirstRamp->endPosition.y, 0.0f, 600.0f))
 		{
+			if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
+				m_pFirstRamp->startPosition.y = m_pFirstRamp->endPosition.y - 0.001f;
 			m_pFirstRamp->calcTrig();
-			setBoxToStartingPosition();
+			setBoxToHigherPosition();
+			setSecondRampToLowerPosition();
 		}
 	}
 

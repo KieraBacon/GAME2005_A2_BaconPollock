@@ -27,7 +27,9 @@ public:
 	void calcPositions();
 	void calcTrig();
 	void clampPositions();
+	void setStartOnTop();
 
+	bool painted[2];
 	unsigned char painting;
 	int paintStyle;
 private:

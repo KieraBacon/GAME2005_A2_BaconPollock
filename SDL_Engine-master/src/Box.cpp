@@ -8,6 +8,7 @@
 Box::Box()
 {
 	runningSim = false;
+	alpha = 255;
 
 	TextureManager::Instance()->load("../Assets/textures/LootCrate_48.png", "lootcrate");
 	setScale(1.0f);
@@ -31,7 +32,7 @@ void Box::draw()
 	const auto y = getTransform()->position.y;
 
 	// draw the target
-	TextureManager::Instance()->draw("lootcrate", x, y, getAngle(), 255, true, SDL_FLIP_NONE, m_fScale, m_fScale);
+	TextureManager::Instance()->draw("lootcrate", x, y, getAngle(), alpha, true, SDL_FLIP_NONE, m_fScale, m_fScale);
 	
 	m_FreeBody.draw();
 }

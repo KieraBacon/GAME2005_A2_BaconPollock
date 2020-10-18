@@ -19,7 +19,9 @@ public:
 	virtual FreeBody& getFreeBody();
 	virtual float getScale();
 	virtual void setScale(float scale);
+public:
 	bool runningSim;
+	unsigned char alpha;
 private:
 	virtual void m_checkCollision();
 	virtual void m_checkBounds();

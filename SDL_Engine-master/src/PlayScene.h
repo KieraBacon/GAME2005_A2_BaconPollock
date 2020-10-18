@@ -24,7 +24,8 @@ public:
 	virtual void clean() override;
 	virtual void handleEvents() override;
 	virtual void start() override;
-	void setBoxToStartingPosition() const;
+	void setBoxToHigherPosition() const;
+	void setSecondRampToLowerPosition() const;
 private:
 	void checkCollisions();
 	
@@ -35,6 +36,7 @@ private:
 	glm::vec2 m_mousePosition;
 
 	Ramp* m_pFirstRamp;
+	Ramp* m_pSecondRamp;
 	Plane* m_pPlaneSprite;
 	Player* m_pPlayer;
 	Box* m_pBox;
