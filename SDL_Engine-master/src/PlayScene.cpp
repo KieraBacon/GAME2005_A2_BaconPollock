@@ -338,6 +338,10 @@ void PlayScene::reangleBoxVelocity(const Ramp& from, const Ramp& to) const
 			m_pBox->getRigidBody()->velocity = Util::rotate(m_pBox->getRigidBody()->velocity, angleDifference);
 		}
 	}
+	else
+	{
+		m_pBox->getRigidBody()->velocity.y = 0.0f;
+	}
 }
 
 void PlayScene::checkCollisions()
