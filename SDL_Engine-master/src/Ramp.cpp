@@ -2,12 +2,13 @@
 #include "Util.h"
 #include "glm/trigonometric.hpp"
 #include "Renderer.h"
+#include "Game.h"
 
 Ramp::Ramp()
 {
 	slopeColour = { 0.0f, 0.0f, 0.0f, 1.0f };
-	boundColour = { 0.0f, 0.0f, 0.0f, 0.75f };
-	fillColour = { 0.0f, 0.0f, 0.0f, 0.25f };
+	boundColour = { 0.0f, 0.0f, 0.0f, 0.5f };
+	fillColour = { 0.25f, 0.25f, 0.25f, 0.25f };
 	getTransform()->position = glm::vec2(0.0f, 0.0f);
 	getRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
 	getRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
@@ -18,32 +19,88 @@ Ramp::Ramp()
 	painted[0] = painted[1] = true;
 	painting = 0;
 	paintStyle = 0;
+	coefficientOfFriction = 0.0f;
+	shapeChanged = true;
+	m_pfillTexture = nullptr;
 }
 
 Ramp::~Ramp() = default;
 
 void Ramp::draw()
 {
-	if(true)
+	const auto renderer = Renderer::Instance()->getRenderer();
+
+	int xmin = (startPosition.x <= endPosition.x ? startPosition.x : endPosition.x);
+	int ymin = (startPosition.y <= endPosition.y ? startPosition.y : endPosition.y);
+	int xmax = (startPosition.x >= endPosition.x ? startPosition.x : endPosition.x);
+	int ymax = (startPosition.y >= endPosition.y ? startPosition.y : endPosition.y);
+	int w = (xmax - xmin);
+	int h = (ymax - ymin);
+	if(shapeChanged && w > 0 && h > 0)
 	{
-		int xmin = (startPosition.x <= endPosition.x ? startPosition.x : endPosition.x);
-		int ymin = (startPosition.y <= endPosition.y ? startPosition.y : endPosition.y);
-		int xmax = (startPosition.x >= endPosition.x ? startPosition.x : endPosition.x);
-		int ymax = (startPosition.y >= endPosition.y ? startPosition.y : endPosition.y);
-		const auto renderer = Renderer::Instance()->getRenderer();
-		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-		SDL_SetRenderDrawColor(renderer, fillColour.x * 255.0f, fillColour.y * 255.0f, fillColour.z * 255.0f, fillColour.w * 255.0f);
-		for(int y = ymin; y <= ymax; ++y)
+		if(m_pfillTexture != nullptr)
 		{
-			for(int x = xmin; x <= xmax; ++x)
+			SDL_DestroyTexture(m_pfillTexture);
+			m_pfillTexture = nullptr;
+		}
+
+		SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
+
+		for(int x = 0; x < surface->w; x++)
+		{
+			for(int y = 0; y < surface->h; y++)
 			{
-				auto A = (startPosition.x >= endPosition.x ? endPosition : startPosition);
-				auto B = (startPosition.x >= endPosition.x ? startPosition : endPosition);
-				if(((B.x - A.x) * (y - A.y) - (B.y - A.y) * (x - A.x)) > 0.0f) // Credit to users Regexident and Eric Bainville from https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line.
-					SDL_RenderDrawPoint(renderer, x, y);
+				bool pos = ((slope.x > 0.0f && slope.y > 0.0f) || (slope.x < 0.0f && slope.y < 0.0f));
+				
+				// Get y position at x on slope
+				int yOfLine = x * slope.y / slope.x;
+				if(!pos)
+					yOfLine += h;
+
+				if(y > yOfLine)
+				{
+					//Convert the pixels to 32 bit
+					Uint32* pixels = (Uint32*)surface->pixels;
+
+					//Set the pixel
+					SDL_Colour c = { fillColour.r * 255.0f, fillColour.g * 255.0f, fillColour.b * 255.0f, fillColour.a * 255.0f };
+					pixels[(y * surface->w) + x] = (Uint32)((c.a << 24) + (c.b << 16) + (c.g << 8) + (c.r << 0));
+				}
 			}
 		}
+
+		//SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+		//SDL_SetRenderDrawColor(renderer, fillColour.x * 255.0f, fillColour.y * 255.0f, fillColour.z * 255.0f, fillColour.w * 255.0f);
+		//for(int y = ymin; y <= ymax; ++y)
+		//{
+		//	for(int x = xmin; x <= xmax; ++x)
+		//	{
+		//		auto A = (startPosition.x >= endPosition.x ? endPosition : startPosition);
+		//		auto B = (startPosition.x >= endPosition.x ? startPosition : endPosition);
+		//		if(((B.x - A.x) * (y - A.y) - (B.y - A.y) * (x - A.x)) > 0.0f) // Credit to users Regexident and Eric Bainville from https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line.
+		//			SDL_RenderDrawPoint(renderer, x, y);
+		//	}
+		//}
+
+		m_pfillTexture = SDL_CreateTextureFromSurface(renderer, surface);
+		if(m_pfillTexture == nullptr)
+		{
+			std::cout << "Unable to create texture from surface!";
+			m_pfillTexture = nullptr;
+		}
+
+		if(surface != nullptr)
+		{
+			SDL_FreeSurface(surface);
+			surface = nullptr;
+		}
+
+		shapeChanged = false;
 	}
+
+	SDL_Rect src = { 0, 0, (xmax - xmin), (ymax - ymin) };
+	SDL_Rect dst = { xmin, ymin, (xmax - xmin), (ymax - ymin) };
+	SDL_RenderCopy(renderer, m_pfillTexture, &src, &dst);
 
 	Util::DrawLine(startPosition, endPosition, slopeColour);
 	if(startPosition.y >= endPosition.y)
@@ -74,7 +131,6 @@ void Ramp::calcPositions()
 	endPosition += slope * (length * 0.5f);
 
 	clampPositions();
-	setStartOnTop();
 }
 
 void Ramp::calcTrig()
@@ -91,7 +147,7 @@ void Ramp::calcTrig()
 	getTransform()->position.x = startPosition.x + (endPosition.x - startPosition.x) * 0.5f;
 	getTransform()->position.y = startPosition.y + (endPosition.y - startPosition.y) * 0.5f;
 
-	setStartOnTop();
+	shapeChanged = true;
 }
 
 void Ramp::clampPositions()
@@ -104,12 +160,16 @@ void Ramp::clampPositions()
 
 void Ramp::setStartOnTop()
 {
-	if(painting == 0 && startPosition.y >= endPosition.y)
-	{
-		glm::vec2 temp = endPosition;
-		endPosition = startPosition;
-		startPosition = temp;
-	}
+	if(painting == 0 && startPosition.y > endPosition.y)
+		swapPositions();
+}
+
+void Ramp::swapPositions()
+{
+	glm::vec2 temp = endPosition;
+	endPosition = startPosition;
+	startPosition = temp;
+	calcTrig();
 }
 
 bool Ramp::clampBounds(glm::vec2 & position, const glm::vec2 & slope, const glm::vec4 & screenBounds)

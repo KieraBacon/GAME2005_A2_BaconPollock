@@ -7,6 +7,7 @@
 /// </summary>
 Box::Box()
 {
+	maintainSpeedOnAngleChange = true;
 	runningSim = false;
 	alpha = 255;
 

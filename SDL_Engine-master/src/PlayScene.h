@@ -27,6 +27,7 @@ public:
 	void setBoxToHigherPosition() const;
 	void setSecondRampToLowerPosition() const;
 private:
+	void reangleBoxVelocity(const Ramp& from, const Ramp& to) const;
 	void checkCollisions();
 	
 	// IMGUI Function

@@ -8,6 +8,7 @@
 #include "Renderer.h"
 #include <sstream>
 #include "CollisionManager.h"
+#include "Util.h"
 
 PlayScene::PlayScene()
 {
@@ -298,82 +299,105 @@ void PlayScene::setBoxToHigherPosition() const
 
 void PlayScene::setSecondRampToLowerPosition() const
 {
-	if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
+	if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y) // The first ramp hasn't been properly reangled yet
 	{
 		m_pSecondRamp->startPosition = m_pFirstRamp->startPosition;
 		m_pSecondRamp->endPosition = { (m_pFirstRamp->startPosition.x >= m_pFirstRamp->endPosition.x ? 800.0f : 0.0f), m_pFirstRamp->startPosition.y };
 	}
-	else
+	else // The first ramp is angled downward as it should be
 	{
-		m_pSecondRamp->startPosition = m_pFirstRamp->endPosition;
-		m_pSecondRamp->endPosition = { (m_pFirstRamp->endPosition.x >= m_pFirstRamp->startPosition.x ? 800.0f : 0.0f), m_pFirstRamp->endPosition.y };
+		if(m_pSecondRamp->startPosition != m_pFirstRamp->endPosition)
+		{
+			m_pSecondRamp->startPosition = m_pFirstRamp->endPosition;
+			m_pSecondRamp->endPosition = { (m_pFirstRamp->endPosition.x >= m_pFirstRamp->startPosition.x ? 800.0f : 0.0f), m_pFirstRamp->endPosition.y };
+			m_pSecondRamp->calcTrig();
+		}
 	}
-
-	m_pSecondRamp->calcTrig();
 }
 
-#include "Util.h"
-void PlayScene::checkCollisions()
+void PlayScene::reangleBoxVelocity(const Ramp& from, const Ramp& to) const
 {
-	if(true)
+	m_pBox->getTransform()->rotation = to.slope;
+
+	if(m_pBox->maintainSpeedOnAngleChange)
 	{
-		Ramp* collider = nullptr;
+		//float firstRampAngle = Util::angleOf(from.slope);
+		//float secondRampAngle = Util::angleOf(to.slope);
+		float boxVelocityAngle = Util::angleOf(m_pBox->getRigidBody()->velocity);
 
-		m_pBox->getFreeBody().clean();
-		m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
+		//std::cout << "First ramp: " << firstRampAngle << " second ramp: " << secondRampAngle << " box: " << boxVelocityAngle << std::endl;
 
-		m_pBox->getRigidBody()->isColliding = false;
-		if(m_bCheckCollisionOfWholeBox) // This doesn't really seem to work anyway
+		if(boxVelocityAngle > 0.0f)
 		{
-			if(CollisionManager::lineAngledRectCheck(m_pSecondRamp->startPosition, m_pSecondRamp->endPosition,
-				m_pBox->getTransform()->position, m_pBox->getWidth(), m_pBox->getHeight(), m_pBox->getAngle()))
-			{
-				m_pBox->getRigidBody()->isColliding = true;
-				collider = m_pSecondRamp;
-			}
-			else if(CollisionManager::lineAngledRectCheck(m_pFirstRamp->startPosition, m_pFirstRamp->endPosition,
-				m_pBox->getTransform()->position, m_pBox->getWidth(), m_pBox->getHeight(), m_pBox->getAngle()))
-			{
-				m_pBox->getRigidBody()->isColliding = true;
-				collider = m_pFirstRamp;
-			}
+			float angleDifference = Util::angle(m_pBox->getRigidBody()->velocity, to.slope);
+			m_pBox->getRigidBody()->velocity = Util::rotate(m_pBox->getRigidBody()->velocity, -angleDifference);
 		}
 		else
 		{
-			// Obviously this doesn't work at all, lol
-			m_pBox->getRigidBody()->isColliding = true;
-			if(Util::distance(m_pBox->getTransform()->position, m_pFirstRamp->getTransform()->position) <
-				Util::distance(m_pBox->getTransform()->position, m_pSecondRamp->getTransform()->position))
-				collider = m_pFirstRamp;
-			else
-				collider = m_pSecondRamp;
-		}
-		
-		if(collider != nullptr && m_pBox->getRigidBody()->isColliding)
-		{
-			// Find the components of gravity which are parallel and perpendicular to the slope of the ramp
-			// Step 1: Find the angles which are parallel to and perpendicular to the slope
-			float sa = glm::atan(collider->slope.y / collider->slope.x);
-			float na = glm::atan(collider->slope.x / -collider->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
-			if(na < 0)
-				na += glm::pi<float>(); // This hack ensures that the perpendicular line is always facing downward.
-
-			// Step 2: Obtain the magnitudes of the component vectors
-			float FgparaMag = gravity.y * m_pBox->getRigidBody()->mass * glm::sin(sa); // The magnitude of the component of gravity which is parallel to the incline plane
-			float FgperpMag = gravity.y * m_pBox->getRigidBody()->mass * glm::cos(sa); // The magnitude of the component of gravity which is perpendicular to the incline plane
-			
-			// Step 3: Rotate the component magnitudes according to the angles
-			glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) }; // The vector visual representation to push to the freebody for drawing.
-			glm::vec2 FgperpVec = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
-			m_pBox->getFreeBody().addForceComponent("g", FgparaVec);
-			m_pBox->getFreeBody().addForceComponent("g", FgperpVec);
-
-			// Step 4: Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
-			na -= glm::pi<float>();
-			glm::vec2 normal = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
-			m_pBox->getFreeBody().addForce("n", normal);
+			float angleDifference = Util::angle(m_pBox->getRigidBody()->velocity, to.slope);
+			m_pBox->getRigidBody()->velocity = Util::rotate(m_pBox->getRigidBody()->velocity, angleDifference);
 		}
 	}
+}
+
+void PlayScene::checkCollisions()
+{
+	static Ramp* lastFrameCollider = nullptr; // hooo I don't like this hack!
+	static Ramp* collider = nullptr;
+
+	m_pBox->getFreeBody().clean();
+	m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
+	m_pBox->getRigidBody()->isColliding = false;
+
+	bool declineToRight = m_pFirstRamp->startPosition.x <= m_pFirstRamp->endPosition.x;
+
+	if((declineToRight
+			&& m_pBox->getTransform()->position.x >= m_pFirstRamp->startPosition.x
+			&& m_pBox->getTransform()->position.x <= m_pFirstRamp->endPosition.x) ||
+		(!declineToRight
+			&& m_pBox->getTransform()->position.x >= m_pFirstRamp->endPosition.x
+			&& m_pBox->getTransform()->position.x <= m_pFirstRamp->startPosition.x))
+	{
+		m_pBox->getRigidBody()->isColliding = true;
+		collider = m_pFirstRamp;
+	}
+	else
+	{
+		m_pBox->getRigidBody()->isColliding = true;
+		collider = m_pSecondRamp;
+	}
+
+	if(collider != nullptr && lastFrameCollider != nullptr && collider != lastFrameCollider) // it makes me feel bad
+	{
+		reangleBoxVelocity(*lastFrameCollider, *collider);
+	}
+
+	if(collider != nullptr && m_pBox->getRigidBody()->isColliding)
+	{
+		// Find the components of gravity which are parallel and perpendicular to the slope of the ramp
+		// Step 1: Find the angles which are parallel to and perpendicular to the slope
+		float sa = glm::atan(collider->slope.y / collider->slope.x);
+		float na = glm::atan(collider->slope.x / -collider->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
+		if(na < 0)
+			na += glm::pi<float>(); // This hack ensures that the perpendicular line is always facing downward.
+
+		// Step 2: Obtain the magnitudes of the component vectors
+		float FgparaMag = gravity.y * m_pBox->getRigidBody()->mass * glm::sin(sa); // The magnitude of the component of gravity which is parallel to the incline plane
+		float FgperpMag = gravity.y * m_pBox->getRigidBody()->mass * glm::cos(sa); // The magnitude of the component of gravity which is perpendicular to the incline plane
+
+		// Step 3: Rotate the component magnitudes according to the angles
+		glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) }; // The vector visual representation to push to the freebody for drawing.
+		glm::vec2 FgperpVec = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
+		m_pBox->getFreeBody().addForceComponent("g", FgparaVec);
+		m_pBox->getFreeBody().addForceComponent("g", FgperpVec);
+
+		// Step 4: Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
+		na -= glm::pi<float>();
+		glm::vec2 normal = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
+		m_pBox->getFreeBody().addForce("n", normal);
+	}
+
+	lastFrameCollider = collider;
 }
 
 void PlayScene::GUI_Function() const
@@ -424,15 +448,35 @@ void PlayScene::GUI_Function() const
 
 	ImGui::Separator();
 
-	// Display Checkboxes
-	if(ImGui::Checkbox("Forces##showForcesCheckbox", &m_pBox->getFreeBody().showForces)) {}
-	ImGui::SameLine();
-	if(ImGui::Checkbox("Components##showComponentsCheckbox", &m_pBox->getFreeBody().showComponents)) {}
-	ImGui::SameLine();
-	if(ImGui::Checkbox("Net Force##showNetForceCheckbox", &m_pBox->getFreeBody().showNetForce)) {}
+	// Simulation Stats
+	if(ImGui::CollapsingHeader("Simulation Stats"))
+	{
+		std::ostringstream out;
+		out.precision(2);
+		
+		// First Ramp Slope
+		out.str("");
+		out.clear();
+		out << "First Ramp Slope: " << std::fixed << m_pFirstRamp->slope.y << "/" << m_pFirstRamp->slope.x;
+		ImGui::Text(out.str().c_str());
+
+		// Second Ramp Slope
+		out.str("");
+		out.clear();
+		out << "Second Ramp Slope: " << std::fixed << m_pSecondRamp->slope.y << "/" << m_pSecondRamp->slope.x;
+		ImGui::Text(out.str().c_str());
+
+		// Display Checkboxes
+		ImGui::Text("Display:");
+		ImGui::SameLine();
+		if(ImGui::Checkbox("Forces##showForcesCheckbox", &m_pBox->getFreeBody().showForces)) {}
+		ImGui::SameLine();
+		if(ImGui::Checkbox("Components##showComponentsCheckbox", &m_pBox->getFreeBody().showComponents)) {}
+		ImGui::SameLine();
+		if(ImGui::Checkbox("Net Force##showNetForceCheckbox", &m_pBox->getFreeBody().showNetForce)) {}
+	}
 
 	// Visual Parameters
-
 	if(ImGui::CollapsingHeader("Visual Parameters"))
 	{
 		static float boxScale = m_pBox->getScale();

@@ -25,11 +25,13 @@ public:
 	float length;
 	glm::vec2 slope;
 	float angle;
+	float coefficientOfFriction;
 
 	void calcPositions();
 	void calcTrig();
 	void clampPositions();
 	void setStartOnTop();
+	void swapPositions();
 
 	bool painted[2];
 	unsigned char painting;
@@ -37,6 +39,8 @@ public:
 	
 private:
 	bool clampBounds(glm::vec2& position, const glm::vec2& slope, const glm::vec4& screenBounds);
+	bool shapeChanged;
+	SDL_Texture* m_pfillTexture;
 };
 
 #endif /* defined (__RAMP__) */

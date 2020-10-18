@@ -37,6 +37,7 @@ public:
 	static glm::vec2 negate(glm::vec2 vec);
 	static glm::vec2 inverse(glm::vec2 vec);
 	static glm::vec2 normalize(glm::vec2 vec);
+	static float angleOf(glm::vec2 vec);
 	static float angle(glm::vec2 from, glm::vec2 to);
 	static glm::vec2 rotate(glm::vec2 from, float angle);
 	static float dot(glm::vec2 lhs, glm::vec2 rhs);

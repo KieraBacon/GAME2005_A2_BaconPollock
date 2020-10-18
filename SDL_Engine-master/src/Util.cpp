@@ -259,6 +259,11 @@ glm::vec2 Util::normalize(const glm::vec2 vec)
 	return dest;
 }
 
+float Util::angleOf(glm::vec2 vec)
+{
+	return glm::degrees(glm::atan(vec.y / vec.x));
+}
+
 /**
 * Returns the angle in degrees between from and to.
 */

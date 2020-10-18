@@ -21,6 +21,7 @@ public:
 	virtual void setScale(float scale);
 public:
 	bool runningSim;
+	bool maintainSpeedOnAngleChange;
 	unsigned char alpha;
 private:
 	virtual void m_checkCollision();
