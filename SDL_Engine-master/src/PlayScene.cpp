@@ -22,14 +22,48 @@ void PlayScene::draw()
 {
 	const auto renderer = Renderer::Instance()->getRenderer();
 
-	// Draw the fill boxes
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-	SDL_Rect bottomFill = { 0, m_pSecondRamp->endPosition.y, 800, 600 - m_pSecondRamp->endPosition.y };
-	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->boundColour.x * 255.0f, m_pSecondRamp->boundColour.y * 255.0f, m_pSecondRamp->boundColour.z * 255.0f, m_pSecondRamp->boundColour.w * 255.0f);
-	SDL_RenderDrawRect(renderer, &bottomFill);
-	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->fillColour.x * 255.0f, m_pSecondRamp->fillColour.y * 255.0f, m_pSecondRamp->fillColour.z * 255.0f, m_pSecondRamp->fillColour.w * 255.0f);
-	SDL_RenderFillRect(renderer, &bottomFill);
-	
+	if(m_pFirstRamp->fillColour.a > 0.0f)
+	{
+		const unsigned int numRamps = 2;
+		Ramp* ramps[numRamps] = { m_pFirstRamp, m_pSecondRamp };
+		glm::vec2 higher[numRamps];
+		glm::vec2 lower[numRamps];
+
+		for(unsigned int i = 0; i < numRamps; i++)
+		{
+			higher[i] = (ramps[i]->startPosition.y <= ramps[i]->endPosition.y ? ramps[i]->startPosition : ramps[i]->endPosition);
+			lower[i]  = (ramps[i]->startPosition.y > ramps[i]->endPosition.y ? ramps[i]->startPosition : ramps[i]->endPosition);
+		}
+
+		for(unsigned int i = 0; i < numRamps; i++)
+		{
+			if(higher[i].x == lower[i].x || higher[i].y == lower[i].y)
+				continue;
+
+			SDL_FRect sideFill = (higher[i].x > lower[i].x ?
+				sideFill = { higher[i].x, higher[i].y, 800 - higher[i].x, lower[i].y - higher[i].y } :
+				sideFill = { 0, higher[i].y, higher[i].x, lower[i].y - higher[i].y });
+
+			SDL_SetRenderDrawBlendMode(renderer, (ramps[i]->fillColour.a == 1.0f ? SDL_BLENDMODE_NONE : SDL_BLENDMODE_BLEND));
+			SDL_SetRenderDrawColor(renderer, ramps[i]->fillColour.x * 255.0f, ramps[i]->fillColour.y * 255.0f, ramps[i]->fillColour.z * 255.0f, ramps[i]->fillColour.w * 255.0f);
+			SDL_RenderFillRectF(renderer, &sideFill);
+
+			if(higher[i].y < lower[(i + 1) % numRamps].y)
+			{
+				SDL_SetRenderDrawBlendMode(renderer, (ramps[i]->boundColour.a == 1.0f ? SDL_BLENDMODE_NONE : SDL_BLENDMODE_BLEND));
+				SDL_SetRenderDrawColor(renderer, ramps[i]->boundColour.x * 255.0f, ramps[i]->boundColour.y * 255.0f, ramps[i]->boundColour.z * 255.0f, ramps[i]->boundColour.w * 255.0f);
+				SDL_RenderDrawLineF(renderer, sideFill.x, sideFill.y, sideFill.x + sideFill.w, sideFill.y);
+			}
+		}
+
+		// Draw the fill boxes
+		SDL_Rect bottomFill = { 0, m_pSecondRamp->endPosition.y, 800, 600 - m_pSecondRamp->endPosition.y };
+		//SDL_SetRenderDrawColor(renderer, m_pSecondRamp->boundColour.x * 255.0f, m_pSecondRamp->boundColour.y * 255.0f, m_pSecondRamp->boundColour.z * 255.0f, m_pSecondRamp->boundColour.w * 255.0f);
+		//SDL_RenderDrawRect(renderer, &bottomFill);
+		SDL_SetRenderDrawColor(renderer, m_pSecondRamp->fillColour.x * 255.0f, m_pSecondRamp->fillColour.y * 255.0f, m_pSecondRamp->fillColour.z * 255.0f, m_pSecondRamp->fillColour.w * 255.0f);
+		SDL_RenderFillRect(renderer, &bottomFill);
+	}
+
 	drawDisplayList();
 
 	if(EventManager::Instance().isIMGUIActive())
