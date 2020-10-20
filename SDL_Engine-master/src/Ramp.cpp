@@ -131,6 +131,7 @@ void Ramp::calcPositions()
 	endPosition += slope * (length * 0.5f);
 
 	clampPositions();
+	shapeChanged = true;
 }
 
 void Ramp::calcTrig()
