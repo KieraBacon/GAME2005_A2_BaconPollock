@@ -29,6 +29,7 @@ public:
 private:
 	void reangleBoxVelocity(const Ramp& from, const Ramp& to) const;
 	void checkCollisions();
+	void updateLabels();
 	
 	// IMGUI Function
 	void GUI_Function() const;
@@ -52,6 +53,9 @@ private:
 	Button* m_pBackButton;
 	Button* m_pNextButton;
 	Label* m_pInstructionsLabel;
+	Label* m_pDistanceLabel;
+	Label* m_pTimeLabel;
+
 };
 
 #endif /* defined (__PLAY_SCENE__) */

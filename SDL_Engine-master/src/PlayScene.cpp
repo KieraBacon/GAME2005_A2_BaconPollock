@@ -78,6 +78,7 @@ void PlayScene::draw()
 void PlayScene::update()
 {
 	checkCollisions();
+	updateLabels();
 	updateDisplayList();
 }
 
@@ -206,6 +207,8 @@ void PlayScene::handleEvents()
 
 void PlayScene::start()
 {
+	const SDL_Color blue = { 0, 0, 255, 255 };
+
 	draggingMouse = false;
 	m_bCheckCollisionOfWholeBox = false;
 
@@ -213,6 +216,15 @@ void PlayScene::start()
 
 	// Set GUI Title
 	m_guiTitle = "Play Scene";
+
+	// Labels
+	m_pDistanceLabel = new Label("Distance", "Consolas", 20, blue, glm::vec2(200.0f, 40.0f));
+	m_pDistanceLabel->setParent(this);
+	addChild(m_pDistanceLabel);
+
+	m_pTimeLabel = new Label("Time", "Consolas", 20, blue, glm::vec2(400.0f, 80.0f));
+	m_pTimeLabel->setParent(this);
+	addChild(m_pTimeLabel);
 
 	// First Ramp
 	m_pFirstRamp = new Ramp();
@@ -442,6 +454,51 @@ void PlayScene::checkCollisions()
 
 	lastFrameCollider = collider;
 }
+
+void PlayScene::updateLabels()
+{
+
+	// Ramp 1 calculations
+	float mass = 12.82f;
+	float angle = (180 - m_pFirstRamp->angle) * Util::Deg2Rad;
+	float gravForce = mass * 9.8;
+	float length = m_pFirstRamp->length / 10;
+	float frictionCoefficient1 = 0;			
+	float Fi = gravForce * sin(angle);		// Force on x
+	float Fn = gravForce * cos(angle);		// Force on y
+	float Ff = frictionCoefficient1 * Fn;	// Friction force
+	float F = Fi - Ff;						// Resultant force
+	float acceleration = F / mass;
+
+	float time1 = sqrt(mass * length / acceleration);
+	
+
+	// Ramp 2 calculations
+	float velocityInitial2 = sqrt( 2 *(acceleration * length));
+	float frictionCoefficient2 = 0.42;
+	float kineticFriction2 = (frictionCoefficient2) * (gravForce);
+	float netForce2 = (mass * acceleration) - (kineticFriction2);
+	float acceleration2 = -(netForce2) / mass;
+	float time2 = velocityInitial2 / -acceleration2;
+	float distance2 = 0 + (velocityInitial2 * time2) + (1 / 2) * (acceleration2 * (time2 * time2));
+
+	std::ostringstream out;
+	out.precision(2);
+
+	updateDisplayList();
+
+	// Distance Label
+	out << std::fixed << "Total Distance: " << length + distance2 ;
+	m_pDistanceLabel->setText(out.str());
+
+	// Time label
+	out.str("");
+	out.clear();
+	out << std::fixed << "Total Time: " << time1 + time2 << "s" ;
+	m_pTimeLabel->setText(out.str());
+
+}
+
 
 void PlayScene::GUI_Function() const
 {
