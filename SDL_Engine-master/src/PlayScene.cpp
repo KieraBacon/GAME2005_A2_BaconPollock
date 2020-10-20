@@ -21,20 +21,24 @@ PlayScene::~PlayScene()
 void PlayScene::draw()
 {
 	const auto renderer = Renderer::Instance()->getRenderer();
+
+	// Draw the fill boxes
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_Rect bottomFill = { 0, m_pSecondRamp->endPosition.y, 800, 600 - m_pSecondRamp->endPosition.y };
 	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->boundColour.x * 255.0f, m_pSecondRamp->boundColour.y * 255.0f, m_pSecondRamp->boundColour.z * 255.0f, m_pSecondRamp->boundColour.w * 255.0f);
 	SDL_RenderDrawRect(renderer, &bottomFill);
 	SDL_SetRenderDrawColor(renderer, m_pSecondRamp->fillColour.x * 255.0f, m_pSecondRamp->fillColour.y * 255.0f, m_pSecondRamp->fillColour.z * 255.0f, m_pSecondRamp->fillColour.w * 255.0f);
 	SDL_RenderFillRect(renderer, &bottomFill);
+	
+	drawDisplayList();
 
 	if(EventManager::Instance().isIMGUIActive())
 	{
 		GUI_Function();
 	}
-
-	drawDisplayList();
-	SDL_SetRenderDrawColor(Renderer::Instance()->getRenderer(), 255, 255, 255, 255);
+	
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 0);
+	SDL_RenderDrawPoint(renderer, -1, -1); // This line prevents everything from going absolutely crazy... possibly due to compiler optimization?
 }
 
 void PlayScene::update()
@@ -124,24 +128,12 @@ void PlayScene::handleEvents()
 			const auto deadZone = 10000;
 			if(EventManager::Instance().getGameController(0)->LEFT_STICK_X > deadZone)
 			{
-				m_pPlayer->setAnimationState(PLAYER_RUN_RIGHT);
-				m_playerFacingRight = true;
 			}
 			else if(EventManager::Instance().getGameController(0)->LEFT_STICK_X < -deadZone)
 			{
-				m_pPlayer->setAnimationState(PLAYER_RUN_LEFT);
-				m_playerFacingRight = false;
 			}
 			else
 			{
-				if(m_playerFacingRight)
-				{
-					m_pPlayer->setAnimationState(PLAYER_IDLE_RIGHT);
-				}
-				else
-				{
-					m_pPlayer->setAnimationState(PLAYER_IDLE_LEFT);
-				}
 			}
 		}
 	}
@@ -152,24 +144,12 @@ void PlayScene::handleEvents()
 	{
 		if(EventManager::Instance().isKeyDown(SDL_SCANCODE_A))
 		{
-			m_pPlayer->setAnimationState(PLAYER_RUN_LEFT);
-			m_playerFacingRight = false;
 		}
 		else if(EventManager::Instance().isKeyDown(SDL_SCANCODE_D))
 		{
-			m_pPlayer->setAnimationState(PLAYER_RUN_RIGHT);
-			m_playerFacingRight = true;
 		}
 		else
 		{
-			if(m_playerFacingRight)
-			{
-				m_pPlayer->setAnimationState(PLAYER_IDLE_RIGHT);
-			}
-			else
-			{
-				m_pPlayer->setAnimationState(PLAYER_IDLE_LEFT);
-			}
 		}
 	}
 
@@ -216,6 +196,7 @@ void PlayScene::start()
 	m_pSecondRamp = new Ramp();
 	addChild(m_pSecondRamp);
 	setSecondRampToLowerPosition();
+	m_pSecondRamp->coefficientOfFriction = 0.24f;
 
 	// Box
 	m_pBox = new Box();
@@ -349,12 +330,13 @@ void PlayScene::checkCollisions()
 	static Ramp* lastFrameCollider = nullptr; // hooo I don't like this hack!
 	static Ramp* collider = nullptr;
 
+	// Reset the Box's forces to nil before re-applying them
 	m_pBox->getFreeBody().clean();
 	m_pBox->getFreeBody().addForce("g", gravity * m_pBox->getRigidBody()->mass);
 	m_pBox->getRigidBody()->isColliding = false;
 
+	// Figure out which ramp the box is colliding with
 	bool declineToRight = m_pFirstRamp->startPosition.x <= m_pFirstRamp->endPosition.x;
-
 	if((declineToRight
 			&& m_pBox->getTransform()->position.x >= m_pFirstRamp->startPosition.x
 			&& m_pBox->getTransform()->position.x <= m_pFirstRamp->endPosition.x) ||
@@ -371,34 +353,57 @@ void PlayScene::checkCollisions()
 		collider = m_pSecondRamp;
 	}
 
-	if(collider != nullptr && lastFrameCollider != nullptr && collider != lastFrameCollider) // it makes me feel bad
+	if(collider != nullptr)
 	{
-		reangleBoxVelocity(*lastFrameCollider, *collider);
-	}
+		// If the box has changed ramp, do this hack to get it facing in the right direction so it doesn't fall through
+		if(lastFrameCollider != nullptr && collider != lastFrameCollider) // it makes me feel bad
+		{
+			reangleBoxVelocity(*lastFrameCollider, *collider);
+		}
 
-	if(collider != nullptr && m_pBox->getRigidBody()->isColliding)
-	{
-		// Find the components of gravity which are parallel and perpendicular to the slope of the ramp
-		// Step 1: Find the angles which are parallel to and perpendicular to the slope
-		float sa = glm::atan(collider->slope.y / collider->slope.x);
-		float na = glm::atan(collider->slope.x / -collider->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
-		if(na < 0)
-			na += glm::pi<float>(); // This hack ensures that the perpendicular line is always facing downward.
+		// Figure out and apply the normal force
+		glm::vec2 normal = { 0.0f, 0.0f };
+		if(m_pBox->getRigidBody()->isColliding)
+		{
+			// Find the components of gravity which are parallel and perpendicular to the slope of the ramp
+			// Step 1: Find the angles which are parallel to and perpendicular to the slope
+			float sa = glm::atan(collider->slope.y / collider->slope.x);
+			float na = glm::atan(collider->slope.x / -collider->slope.y); // This gives the correct values only in the cases of -180 > -90 or 0 > 90.
+			if(na < 0)
+				na += glm::pi<float>(); // This hack ensures that the perpendicular line is always facing downward.
 
-		// Step 2: Obtain the magnitudes of the component vectors
-		float FgparaMag = gravity.y * m_pBox->getRigidBody()->mass * glm::sin(sa); // The magnitude of the component of gravity which is parallel to the incline plane
-		float FgperpMag = gravity.y * m_pBox->getRigidBody()->mass * glm::cos(sa); // The magnitude of the component of gravity which is perpendicular to the incline plane
+			// Step 2: Obtain the magnitudes of the component vectors
+			float FgparaMag = gravity.y * m_pBox->getRigidBody()->mass * glm::sin(sa); // The magnitude of the component of gravity which is parallel to the incline plane
+			float FgperpMag = gravity.y * m_pBox->getRigidBody()->mass * glm::cos(sa); // The magnitude of the component of gravity which is perpendicular to the incline plane
 
-		// Step 3: Rotate the component magnitudes according to the angles
-		glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) }; // The vector visual representation to push to the freebody for drawing.
-		glm::vec2 FgperpVec = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
-		m_pBox->getFreeBody().addForceComponent("g", FgparaVec);
-		m_pBox->getFreeBody().addForceComponent("g", FgperpVec);
+			// Step 3: Rotate the component magnitudes according to the angles
+			glm::vec2 FgparaVec = { FgparaMag * glm::cos(sa), FgparaMag * glm::sin(sa) }; // The vector visual representation to push to the freebody for drawing.
+			glm::vec2 FgperpVec = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
+			m_pBox->getFreeBody().addForceComponent("g", FgparaVec);
+			m_pBox->getFreeBody().addForceComponent("g", FgperpVec);
 
-		// Step 4: Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
-		na -= glm::pi<float>();
-		glm::vec2 normal = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
-		m_pBox->getFreeBody().addForce("n", normal);
+			// Step 4: Find the normal force, which is equal and opposite to the component of gravity which is perpendicular to the slope of the ramp
+			na -= glm::pi<float>();
+			normal = { FgperpMag * glm::cos(na), FgperpMag * glm::sin(na) };
+			m_pBox->getFreeBody().addForce("n", normal);
+		}
+
+		// Apply friction, if there is any
+		if(collider->coefficientOfFriction > 0.0f)
+		{
+			float deltaTime = 1.0f / 60.0f;
+			float Fkmag = Util::magnitude(normal) * collider->coefficientOfFriction;
+			glm::vec2 Fk = { 0.0f, 0.0f };
+
+			// If the application of friction would result in acceleration below zero velocity, then apply only the force that will result in zero velocity
+			if((Fkmag / m_pBox->getRigidBody()->mass * deltaTime) > Util::magnitude(m_pBox->getRigidBody()->velocity))
+				Fk = -m_pBox->getRigidBody()->velocity * m_pBox->getRigidBody()->mass;
+			else
+				Fk = Util::normalize(m_pBox->getRigidBody()->velocity) * -Fkmag;
+
+			if(Util::magnitude(Fk) > 0.0f)
+				m_pBox->getFreeBody().addForce("Fk", Fk);
+		}
 	}
 
 	lastFrameCollider = collider;
@@ -478,6 +483,8 @@ void PlayScene::GUI_Function() const
 		if(ImGui::Checkbox("Components##showComponentsCheckbox", &m_pBox->getFreeBody().showComponents)) {}
 		ImGui::SameLine();
 		if(ImGui::Checkbox("Net Force##showNetForceCheckbox", &m_pBox->getFreeBody().showNetForce)) {}
+		
+		ImGui::Separator();
 	}
 
 	// Visual Parameters
@@ -516,11 +523,26 @@ void PlayScene::GUI_Function() const
 			m_pBox->getFreeBody().setLabelSize(labelSize);
 		}
 
+		static float fillColour[4] = { m_pFirstRamp->fillColour.r, m_pFirstRamp->fillColour.g, m_pFirstRamp->fillColour.b, m_pFirstRamp->fillColour.a };
+		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.70f);
+		if(ImGui::ColorEdit4("Fill Colour", fillColour, 0))
+		{
+			m_pFirstRamp->fillColour.r = m_pSecondRamp->fillColour.r = fillColour[0];
+			m_pFirstRamp->fillColour.g = m_pSecondRamp->fillColour.g = fillColour[1];
+			m_pFirstRamp->fillColour.b = m_pSecondRamp->fillColour.b = fillColour[2];
+			m_pFirstRamp->fillColour.a = m_pSecondRamp->fillColour.a = fillColour[3];
+			m_pFirstRamp->shapeChanged = m_pSecondRamp->shapeChanged = true;
+		}
+
 		ImGui::Separator();
 	}
 
 	if(ImGui::CollapsingHeader("Simulation Parameters", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+		if(ImGui::SliderFloat("Friction of First Surface##Fk1", &m_pFirstRamp->coefficientOfFriction, 0.0f, 100.0f)) {}
+		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 100.0f)) {}
+
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
 		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
 		{

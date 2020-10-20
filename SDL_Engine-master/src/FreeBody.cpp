@@ -22,22 +22,26 @@ DisplayForce::~DisplayForce()
 
 void DisplayForce::draw()
 {
-	Util::DrawLine(origin, origin + head * m_fScale, colour);
-	Util::DrawLine(origin + head * m_fScale, origin + head * m_fScale + Util::normalize((Util::rotate(head, m_fArrowHead))) * m_fArrowScale, colour);
-	Util::DrawLine(origin + head * m_fScale, origin + head * m_fScale + Util::normalize((Util::rotate(head, -m_fArrowHead))) * m_fArrowScale, colour);
-	
-	if(extender > 0.0f)
-		m_pLabel.getTransform()->position = origin + head * m_fScale + Util::normalize(head) * static_cast<float>(m_pLabel.getHeight()) * extender;
-	else
-		m_pLabel.getTransform()->position = origin + head * m_fScale;
-	m_pLabel.getTransform()->position.x += (m_fScale * 0.5);
-	
-	std::ostringstream out;
-	out.precision(1);
-	out << std::fixed << name << ": " << Util::magnitude(head) << "N";
-	m_pLabel.setText(out.str());
-	
-	m_pLabel.draw();
+	float magnitude = Util::magnitude(head);
+	if(magnitude >= 0.01f || magnitude <= -0.01f)
+	{
+		Util::DrawLine(origin, origin + head * m_fScale, colour);
+		Util::DrawLine(origin + head * m_fScale, origin + head * m_fScale + Util::normalize((Util::rotate(head, m_fArrowHead))) * m_fArrowScale, colour);
+		Util::DrawLine(origin + head * m_fScale, origin + head * m_fScale + Util::normalize((Util::rotate(head, -m_fArrowHead))) * m_fArrowScale, colour);
+
+		if(extender > 0.0f)
+			m_pLabel.getTransform()->position = origin + head * m_fScale + Util::normalize(head) * static_cast<float>(m_pLabel.getHeight()) * extender;
+		else
+			m_pLabel.getTransform()->position = origin + head * m_fScale;
+		m_pLabel.getTransform()->position.x += (m_fScale * 0.5);
+
+		std::ostringstream out;
+		out.precision(1);
+		out << std::fixed << name << ": " << magnitude << "N";
+		m_pLabel.setText(out.str());
+
+		m_pLabel.draw();
+	}
 }
 
 FreeBody::FreeBody()

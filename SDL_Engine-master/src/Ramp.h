@@ -36,10 +36,10 @@ public:
 	bool painted[2];
 	unsigned char painting;
 	int paintStyle;
+	bool shapeChanged;
 	
 private:
 	bool clampBounds(glm::vec2& position, const glm::vec2& slope, const glm::vec4& screenBounds);
-	bool shapeChanged;
 	SDL_Texture* m_pfillTexture;
 };
 
