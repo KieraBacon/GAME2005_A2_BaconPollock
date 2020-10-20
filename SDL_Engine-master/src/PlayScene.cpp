@@ -489,7 +489,7 @@ void PlayScene::updateLabels()
 	float netForce2 = (mass * acceleration) - (kineticFriction2);
 	float acceleration2 = -(netForce2) / mass;
 	float time2 = velocityInitial2 / -acceleration2;
-	float distance2 = 0 + (velocityInitial2 * time2) + (1 / 2) * (acceleration2 * (time2 * time2));
+	float distance2 =  (velocityInitial2 * time2) + ((0.5) * (acceleration2 * (time2 * time2)));
 
 	std::ostringstream out;
 	out.precision(2);
