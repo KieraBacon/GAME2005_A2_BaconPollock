@@ -20,7 +20,11 @@ PlayScene::~PlayScene()
 
 void PlayScene::draw()
 {
+
 	const auto renderer = Renderer::Instance()->getRenderer();
+
+	TextureManager::Instance()->draw("background", 400, 300, 0, 255, true);
+
 
 	if(m_pFirstRamp->fillColour.a > 0.0f)
 	{
@@ -217,6 +221,8 @@ void PlayScene::start()
 	// Set GUI Title
 	m_guiTitle = "Play Scene";
 
+
+
 	// Labels
 	m_pDistanceLabel = new Label("Distance", "Consolas", 20, blue, glm::vec2(400.0f, 40.0f));
 	m_pDistanceLabel->setParent(this);
@@ -251,6 +257,9 @@ void PlayScene::start()
 	m_pBox->getFreeBody().setScale(0.5f);
 	m_pBox->getFreeBody().setArrowScale(10.0f);
 	setBoxToHigherPosition();
+
+	TextureManager::Instance()->load("../Assets/textures/background4_big2.png", "background");
+
 
 	//// Back Button
 	//m_pBackButton = new Button("../Assets/textures/backButton.png", "backButton", BACK_BUTTON);
