@@ -7,6 +7,8 @@
 StartScene::StartScene()
 {
 	StartScene::start();
+	TextureManager::Instance()->load("../Assets/textures/background2.jpg", "background");
+
 }
 
 StartScene::~StartScene()
@@ -14,6 +16,8 @@ StartScene::~StartScene()
 
 void StartScene::draw()
 {
+	TextureManager::Instance()->draw("background", 400, 400, 0, 255, true);
+
 	drawDisplayList();
 }
 
