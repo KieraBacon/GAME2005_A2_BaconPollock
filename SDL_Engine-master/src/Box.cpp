@@ -20,6 +20,7 @@ Box::Box()
 	getRigidBody()->isColliding = false;
 
 	setType(TARGET);
+	SceneScale = 1.0f;
 }
 
 Box::~Box()
@@ -89,7 +90,7 @@ void Box::m_move()
 	{
 		getRigidBody()->acceleration = m_FreeBody.getNetForce() / getRigidBody()->mass;
 		getRigidBody()->velocity += getRigidBody()->acceleration * deltaTime;
-		getTransform()->position += getRigidBody()->velocity * deltaTime;
+		getTransform()->position += getRigidBody()->velocity * deltaTime * SceneScale;
 	}
 	m_FreeBody.getTransform()->position = getTransform()->position;
 }

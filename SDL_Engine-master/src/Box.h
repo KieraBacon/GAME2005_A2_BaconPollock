@@ -23,6 +23,7 @@ public:
 	bool runningSim;
 	bool maintainSpeedOnAngleChange;
 	unsigned char alpha;
+	float SceneScale;
 private:
 	virtual void m_checkCollision();
 	virtual void m_checkBounds();

@@ -232,17 +232,26 @@ void PlayScene::start()
 	m_pTimeLabel->setParent(this);
 	addChild(m_pTimeLabel);
 
+	// Box
+	m_pBox = new Box();
+	addChild(m_pBox);
+	m_pBox->SceneScale = 40.0f;
+	m_pBox->setScale(0.75f);
+	m_pBox->getFreeBody().setScale(0.5f);
+	m_pBox->getFreeBody().setArrowScale(10.0f);
+	
 	// First Ramp
 	m_pFirstRamp = new Ramp();
 	addChild(m_pFirstRamp);
-	m_pFirstRamp->getTransform()->position = { 400.0f, 300.0f };
+	m_pFirstRamp->getTransform()->position = { 150.0f, 400.0f };
 	{
-		float rise = -30;
-		float run = 40;
+		float rise = -3.0f * m_pBox->SceneScale;
+		float run = 4.0f * m_pBox->SceneScale;
 		m_pFirstRamp->startPosition = { m_pFirstRamp->getTransform()->position.x - (run * 0.5f), m_pFirstRamp->getTransform()->position.y + (rise * 0.5f) };
 		m_pFirstRamp->endPosition = { m_pFirstRamp->getTransform()->position.x + (run * 0.5f), m_pFirstRamp->getTransform()->position.y - (rise * 0.5f) };
 		m_pFirstRamp->calcTrig();
 	}
+	setBoxToHigherPosition();
 
 	// Second Ramp
 	m_pSecondRamp = new Ramp();
@@ -250,13 +259,6 @@ void PlayScene::start()
 	setSecondRampToLowerPosition();
 	m_pSecondRamp->coefficientOfFriction = 0.24f;
 
-	// Box
-	m_pBox = new Box();
-	addChild(m_pBox);
-	m_pBox->setScale(0.75f);
-	m_pBox->getFreeBody().setScale(0.5f);
-	m_pBox->getFreeBody().setArrowScale(10.0f);
-	setBoxToHigherPosition();
 
 	TextureManager::Instance()->load("../Assets/textures/background4_big2.png", "background");
 
