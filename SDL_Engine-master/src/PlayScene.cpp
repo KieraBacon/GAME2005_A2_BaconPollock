@@ -218,7 +218,7 @@ void PlayScene::start()
 	m_guiTitle = "Play Scene";
 
 	// Labels
-	m_pDistanceLabel = new Label("Distance", "Consolas", 20, blue, glm::vec2(200.0f, 40.0f));
+	m_pDistanceLabel = new Label("Distance", "Consolas", 20, blue, glm::vec2(400.0f, 40.0f));
 	m_pDistanceLabel->setParent(this);
 	addChild(m_pDistanceLabel);
 
