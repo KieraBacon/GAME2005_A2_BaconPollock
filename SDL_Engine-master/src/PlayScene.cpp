@@ -235,7 +235,7 @@ void PlayScene::start()
 	// Box
 	m_pBox = new Box();
 	addChild(m_pBox);
-	m_pBox->SceneScale = 40.0f;
+	m_pBox->SceneScale = 2.0f;
 	m_pBox->setScale(0.75f);
 	m_pBox->getFreeBody().setScale(0.5f);
 	m_pBox->getFreeBody().setArrowScale(10.0f);
@@ -470,10 +470,10 @@ void PlayScene::updateLabels()
 {
 
 	// Ramp 1 calculations
-	float mass = 12.82f;
+	float mass = m_pBox->getRigidBody()->mass;
 	float angle = (180 - m_pFirstRamp->angle) * Util::Deg2Rad;
 	float gravForce = mass * 9.8;
-	float length = m_pFirstRamp->length / 10;
+	float length = m_pFirstRamp->length / m_pBox->SceneScale;
 	float frictionCoefficient1 = m_pFirstRamp->coefficientOfFriction;
 	float Fi = gravForce * sin(angle);		// Force on x
 	float Fn = gravForce * cos(angle);		// Force on y
@@ -601,6 +601,14 @@ void PlayScene::GUI_Function() const
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
 		}
+
+		static float sceneScale = m_pBox->getSceneScale();
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
+		if (ImGui::SliderFloat("Scene Scale##SceneScale", &sceneScale, 0.25f, 2.5f))
+		{
+			m_pBox->setSceneScale(sceneScale);
+		}
+
 		ImGui::SameLine();
 		static float freebodyScale = m_pBox->getFreeBody().getScale();
 		if(ImGui::SliderFloat("Arrow Scale##FreebodyScale", &freebodyScale, 0.25f, 5.0f))

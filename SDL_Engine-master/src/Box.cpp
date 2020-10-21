@@ -74,6 +74,18 @@ void Box::setScale(float scale)
 	setHeight(size.y * m_fScale);
 }
 
+
+float Box::getSceneScale()
+{
+	return SceneScale;
+}
+
+void Box::setSceneScale(float scale)
+{
+	SceneScale = scale;
+}
+
+
 void Box::m_checkCollision()
 {
 }

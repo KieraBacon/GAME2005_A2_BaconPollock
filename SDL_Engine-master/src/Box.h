@@ -19,6 +19,8 @@ public:
 	virtual FreeBody& getFreeBody();
 	virtual float getScale();
 	virtual void setScale(float scale);
+	virtual float getSceneScale();
+	virtual void setSceneScale(float scale);
 public:
 	bool runningSim;
 	bool maintainSpeedOnAngleChange;
