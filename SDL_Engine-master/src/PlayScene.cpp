@@ -235,7 +235,7 @@ void PlayScene::start()
 	// Box
 	m_pBox = new Box();
 	addChild(m_pBox);
-	m_pBox->SceneScale = 2.0f;
+	m_pBox->SceneScale = 40.0f;
 	m_pBox->setScale(0.75f);
 	m_pBox->getFreeBody().setScale(0.5f);
 	m_pBox->getFreeBody().setArrowScale(10.0f);
@@ -466,7 +466,7 @@ void PlayScene::checkCollisions()
 	lastFrameCollider = collider;
 }
 
-void PlayScene::updateLabels()
+void PlayScene::updateLabels() 
 {
 
 	// Ramp 1 calculations
@@ -476,7 +476,7 @@ void PlayScene::updateLabels()
 	float length = m_pFirstRamp->length / m_pBox->SceneScale;
 	float frictionCoefficient1 = m_pFirstRamp->coefficientOfFriction;
 	float Fi = gravForce * sin(angle);		// Force on x
-	float Fn = gravForce * cos(angle);		// Force on y
+	float Fn = gravForce * cos(angle);		// Neutral force
 	float Ff = frictionCoefficient1 * Fn;	// Friction force
 	float F = Fi - Ff;						// Resultant force
 	float acceleration = F / mass;
@@ -484,19 +484,35 @@ void PlayScene::updateLabels()
 	float time1 = (sqrt(mass * length / acceleration)) ;
 	
 
-	// Ramp 2 calculations
+	//// Ramp 2 calculations
 	float velocityInitial2 = sqrt( 2 *(acceleration * length));
 	float frictionCoefficient2 = m_pSecondRamp->coefficientOfFriction;
-	float kineticFriction2 = (frictionCoefficient2) * (gravForce);
-	float netForce2 = (mass * acceleration) - (kineticFriction2);
-	float acceleration2 = -(netForce2) / mass;
-	float time2 = velocityInitial2 / -acceleration2;
-	float distance2 =  (velocityInitial2 * time2) + ((0.5) * (acceleration2 * (time2 * time2)));
+	float Fn2 = gravForce;
+	float Ff2 = frictionCoefficient2 * Fn2;
+	float Fi2 = velocityInitial2 - Ff2;
+	float acceleration2 = (-Fi2 / mass);
+
+	//float fi2 = mass * acceleration2;
+	//float Fn2 = gravForce;					// Force on y
+	//float Ff2 = frictionCoefficient2 * Fn;	// Friction force
+	//float F = Fi - Ff;						// Resultant force
+	//float acceleration = F / mass;
+
+	float distance2 = (velocityInitial2 * velocityInitial2) / (2 * frictionCoefficient2 * 9.8);
+	float time2 = ((velocityInitial2) + (0)) / acceleration2;
+
+
+	////float kineticFriction2 = (frictionCoefficient2) * (gravForce);
+	//float Ff2 = frictionCoefficient2 * Fn2;
+	//float netForce2 = (mass * acceleration) - (kineticFriction2);
+	//float acceleration2 = -(netForce2) / mass;
+	//float time2 = velocityInitial2 / -acceleration2;
+	//float distance2 =  (velocityInitial2 * time2) + ((0.5) * (acceleration2 * (time2 * time2)));
 
 	std::ostringstream out;
 	out.precision(2);
 
-	updateDisplayList();
+	//updateDisplayList();
 
 	// Distance Label
 	out << std::fixed << "Total Distance: " << length + distance2 ;
