@@ -474,19 +474,19 @@ void PlayScene::updateLabels()
 	float angle = (180 - m_pFirstRamp->angle) * Util::Deg2Rad;
 	float gravForce = mass * 9.8;
 	float length = m_pFirstRamp->length / 10;
-	float frictionCoefficient1 = 0;			
+	float frictionCoefficient1 = m_pFirstRamp->coefficientOfFriction;
 	float Fi = gravForce * sin(angle);		// Force on x
 	float Fn = gravForce * cos(angle);		// Force on y
 	float Ff = frictionCoefficient1 * Fn;	// Friction force
 	float F = Fi - Ff;						// Resultant force
 	float acceleration = F / mass;
 
-	float time1 = sqrt(mass * length / acceleration);
+	float time1 = (sqrt(mass * length / acceleration)) ;
 	
 
 	// Ramp 2 calculations
 	float velocityInitial2 = sqrt( 2 *(acceleration * length));
-	float frictionCoefficient2 = 0.42;
+	float frictionCoefficient2 = m_pSecondRamp->coefficientOfFriction;
 	float kineticFriction2 = (frictionCoefficient2) * (gravForce);
 	float netForce2 = (mass * acceleration) - (kineticFriction2);
 	float acceleration2 = -(netForce2) / mass;
@@ -587,6 +587,7 @@ void PlayScene::GUI_Function() const
 		if(ImGui::Checkbox("Net Force##showNetForceCheckbox", &m_pBox->getFreeBody().showNetForce)) {}
 		
 		ImGui::Separator();
+	
 	}
 
 	// Visual Parameters
@@ -642,8 +643,8 @@ void PlayScene::GUI_Function() const
 	if(ImGui::CollapsingHeader("Simulation Parameters", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
-		if(ImGui::SliderFloat("Friction of First Surface##Fk1", &m_pFirstRamp->coefficientOfFriction, 0.0f, 100.0f)) {}
-		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 100.0f)) {}
+		if(ImGui::SliderFloat("Friction of First Surface##Fk1", &m_pFirstRamp->coefficientOfFriction, 0.0f, 1.0f)) {}
+		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 1.0f)) {}
 
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
 		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
