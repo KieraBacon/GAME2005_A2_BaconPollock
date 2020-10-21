@@ -491,23 +491,22 @@ void PlayScene::updateLabels()
 	float Ff2 = frictionCoefficient2 * Fn2;
 	float Fi2 = velocityInitial2 - Ff2;
 	float acceleration2 = (-Fi2 / mass);
+	float distance2 = (velocityInitial2 * velocityInitial2) / (2 * frictionCoefficient2 * 9.8);
+	float time2 = ((velocityInitial2) + (0)) / acceleration2;
 
-	//float fi2 = mass * acceleration2;
+	/* Obsolete calculations
+		//float fi2 = mass * acceleration2;
 	//float Fn2 = gravForce;					// Force on y
 	//float Ff2 = frictionCoefficient2 * Fn;	// Friction force
 	//float F = Fi - Ff;						// Resultant force
 	//float acceleration = F / mass;
-
-	float distance2 = (velocityInitial2 * velocityInitial2) / (2 * frictionCoefficient2 * 9.8);
-	float time2 = ((velocityInitial2) + (0)) / acceleration2;
-
-
 	////float kineticFriction2 = (frictionCoefficient2) * (gravForce);
 	//float Ff2 = frictionCoefficient2 * Fn2;
 	//float netForce2 = (mass * acceleration) - (kineticFriction2);
 	//float acceleration2 = -(netForce2) / mass;
 	//float time2 = velocityInitial2 / -acceleration2;
 	//float distance2 =  (velocityInitial2 * time2) + ((0.5) * (acceleration2 * (time2 * time2)));
+	*/
 
 	std::ostringstream out;
 	out.precision(2);
