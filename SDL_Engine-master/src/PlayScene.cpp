@@ -232,6 +232,10 @@ void PlayScene::start()
 	m_pTimeLabel->setParent(this);
 	addChild(m_pTimeLabel);
 
+	m_pScreenRatioLabel = new Label("Ratio", "Consolas", 12, blue, glm::vec2(400.0f, 20.0f));
+	m_pScreenRatioLabel->setParent(this);
+	addChild(m_pScreenRatioLabel);
+
 	// Box
 	m_pBox = new Box();
 	addChild(m_pBox);
@@ -514,7 +518,7 @@ void PlayScene::updateLabels()
 	//updateDisplayList();
 
 	// Distance Label
-	out << std::fixed << "Total Distance: " << length + distance2 ;
+	out << std::fixed << "Total Distance: " << length + distance2 << "m" ;
 	m_pDistanceLabel->setText(out.str());
 
 	// Time label
@@ -522,6 +526,12 @@ void PlayScene::updateLabels()
 	out.clear();
 	out << std::fixed << "Total Time: " << time1 + time2 << "s" ;
 	m_pTimeLabel->setText(out.str());
+
+	// Ratio label
+	out.str("");
+	out.clear();
+	out << std::fixed << "Meters to pixel ratio: 1m/" << m_pBox->SceneScale << "pixels";
+	m_pScreenRatioLabel->setText(out.str());
 
 }
 

@@ -55,6 +55,7 @@ private:
 	Label* m_pInstructionsLabel;
 	Label* m_pDistanceLabel;
 	Label* m_pTimeLabel;
+	Label* m_pScreenRatioLabel;
 
 };
 
