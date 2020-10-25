@@ -313,6 +313,7 @@ void PlayScene::start()
 	m_pInstructionsLabel->getTransform()->position = glm::vec2(Config::SCREEN_WIDTH * 0.5f, 500.0f);
 
 	addChild(m_pInstructionsLabel);
+	updateLabels();
 }
 
 void PlayScene::setBoxToHigherPosition() const
@@ -682,12 +683,15 @@ void PlayScene::GUI_Function()
 		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 1.0f)) { updateLabels(); }
 
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
-		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
+		static float displayLength = m_pFirstRamp->length / m_pBox->getSceneScale();
+		if(ImGui::SliderFloat("Length##Length", &displayLength, 0.0f, 1000.0f / m_pBox->getSceneScale()))
 		{
+			m_pFirstRamp->length = displayLength * m_pBox->getSceneScale();
 			m_pFirstRamp->calcPositions();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
 			updateLabels();
+			displayLength = m_pFirstRamp->length / m_pBox->getSceneScale();
 		}
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.34f);
 		ImGui::SameLine();
@@ -698,17 +702,21 @@ void PlayScene::GUI_Function()
 			setSecondRampToLowerPosition();
 			updateLabels();
 		}
+
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
-		if(ImGui::SliderFloat("x##startX", &m_pFirstRamp->startPosition.x, 0.0f, 800.0f))
+		static glm::vec2 displayStart = glm::vec2(m_pFirstRamp->startPosition.x, m_pFirstRamp->startPosition.y) / m_pBox->getSceneScale();
+		if(ImGui::SliderFloat("x##startX", &displayStart.x, 0.0f, 800.0f / m_pBox->getSceneScale()))
 		{
+			m_pFirstRamp->startPosition.x = displayStart.x * m_pBox->getSceneScale();
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
 			updateLabels();
 		}
 		ImGui::SameLine();
-		if(ImGui::SliderFloat("y##startY", &m_pFirstRamp->startPosition.y, 0.0f, 600.0f))
+		if(ImGui::SliderFloat("y##startY", &displayStart.y, 0.0f, 600.0f / m_pBox->getSceneScale()))
 		{
+			m_pFirstRamp->startPosition.y = displayStart.y * m_pBox->getSceneScale();
 			if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
 				m_pFirstRamp->endPosition.y = m_pFirstRamp->startPosition.y + 0.001f;
 			m_pFirstRamp->calcTrig();
@@ -717,16 +725,19 @@ void PlayScene::GUI_Function()
 			updateLabels();
 		}
 
-		if(ImGui::SliderFloat("x##endX", &m_pFirstRamp->endPosition.x, 0.0f, 800.0f))
+		static glm::vec2 displayEnd = glm::vec2(m_pFirstRamp->endPosition.x, m_pFirstRamp->endPosition.y) / m_pBox->getSceneScale();
+		if(ImGui::SliderFloat("x##endX", &displayEnd.x, 0.0f, 800.0f / m_pBox->getSceneScale()))
 		{
+			m_pFirstRamp->endPosition.x = displayEnd.x * m_pBox->getSceneScale();
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
 			updateLabels();
 		}
 		ImGui::SameLine();
-		if(ImGui::SliderFloat("y##endY", &m_pFirstRamp->endPosition.y, 0.0f, 600.0f))
+		if(ImGui::SliderFloat("y##endY", &displayEnd.y, 0.0f, 600.0f / m_pBox->getSceneScale()))
 		{
+			m_pFirstRamp->endPosition.y = displayEnd.y * m_pBox->getSceneScale();
 			if(m_pFirstRamp->startPosition.y >= m_pFirstRamp->endPosition.y)
 				m_pFirstRamp->startPosition.y = m_pFirstRamp->endPosition.y - 0.001f;
 			m_pFirstRamp->calcTrig();
