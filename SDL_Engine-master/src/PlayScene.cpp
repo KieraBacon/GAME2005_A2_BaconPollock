@@ -82,7 +82,7 @@ void PlayScene::draw()
 void PlayScene::update()
 {
 	checkCollisions();
-	updateLabels();
+	// updateLabels();
 	updateDisplayList();
 }
 
@@ -536,7 +536,7 @@ void PlayScene::updateLabels()
 }
 
 
-void PlayScene::GUI_Function() const
+void PlayScene::GUI_Function()
 {
 	// Always open with a NewFrame
 	ImGui::NewFrame();
@@ -553,6 +553,7 @@ void PlayScene::GUI_Function() const
 		setBoxToHigherPosition();
 		setSecondRampToLowerPosition();
 		m_pBox->runningSim = true;
+		updateLabels();
 	}
 	ImGui::SameLine();
 	
@@ -574,6 +575,7 @@ void PlayScene::GUI_Function() const
 		m_pFirstRamp->painting = 1;
 		m_pFirstRamp->painted[0] = false;
 		m_pFirstRamp->painted[1] = false;
+		updateLabels();
 	}
 
 	ImGui::PopStyleColor();
@@ -627,12 +629,12 @@ void PlayScene::GUI_Function() const
 			setSecondRampToLowerPosition();
 		}
 
-		static float sceneScale = m_pBox->getSceneScale();
-		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
-		if (ImGui::SliderFloat("Scene Scale##SceneScale", &sceneScale, 0.25f, 2.5f))
-		{
-			m_pBox->setSceneScale(sceneScale);
-		}
+		//static float sceneScale = m_pBox->getSceneScale();
+		//ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
+		//if (ImGui::SliderFloat("Scene Scale##SceneScale", &sceneScale, 0.25f, 2.5f))
+		//{
+		//	m_pBox->setSceneScale(sceneScale);
+		//}
 
 		ImGui::SameLine();
 		static float freebodyScale = m_pBox->getFreeBody().getScale();
@@ -676,8 +678,8 @@ void PlayScene::GUI_Function() const
 	if(ImGui::CollapsingHeader("Simulation Parameters", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
-		if(ImGui::SliderFloat("Friction of First Surface##Fk1", &m_pFirstRamp->coefficientOfFriction, 0.0f, 1.0f)) {}
-		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 1.0f)) {}
+		if(ImGui::SliderFloat("Friction of First Surface##Fk1", &m_pFirstRamp->coefficientOfFriction, 0.0f, 1.0f)) { updateLabels(); }
+		if(ImGui::SliderFloat("Friction of Second Surface##Fk2", &m_pSecondRamp->coefficientOfFriction, 0.0f, 1.0f)) { updateLabels(); }
 
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.35f);
 		if(ImGui::SliderFloat("Length##Length", &m_pFirstRamp->length, 0.0f, 1000.0f))
@@ -685,6 +687,7 @@ void PlayScene::GUI_Function() const
 			m_pFirstRamp->calcPositions();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
 		ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.34f);
 		ImGui::SameLine();
@@ -693,14 +696,15 @@ void PlayScene::GUI_Function() const
 			m_pFirstRamp->calcPositions();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
-
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
 		if(ImGui::SliderFloat("x##startX", &m_pFirstRamp->startPosition.x, 0.0f, 800.0f))
 		{
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
 		ImGui::SameLine();
 		if(ImGui::SliderFloat("y##startY", &m_pFirstRamp->startPosition.y, 0.0f, 600.0f))
@@ -710,6 +714,7 @@ void PlayScene::GUI_Function() const
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
 
 		if(ImGui::SliderFloat("x##endX", &m_pFirstRamp->endPosition.x, 0.0f, 800.0f))
@@ -717,6 +722,7 @@ void PlayScene::GUI_Function() const
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
 		ImGui::SameLine();
 		if(ImGui::SliderFloat("y##endY", &m_pFirstRamp->endPosition.y, 0.0f, 600.0f))
@@ -726,6 +732,7 @@ void PlayScene::GUI_Function() const
 			m_pFirstRamp->calcTrig();
 			setBoxToHigherPosition();
 			setSecondRampToLowerPosition();
+			updateLabels();
 		}
 	}
 
