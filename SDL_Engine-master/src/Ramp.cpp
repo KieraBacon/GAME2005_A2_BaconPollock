@@ -154,9 +154,9 @@ void Ramp::calcTrig()
 void Ramp::clampPositions()
 {
 	glm::vec4 screen = { 0.0f, 0.0f, 800.0f, 600.0f };
-	if(clampBounds(startPosition, slope, screen) &&
-		clampBounds(endPosition, slope, screen))
-		calcTrig();
+	clampBounds(startPosition, slope, screen);
+	clampBounds(endPosition, slope, screen);
+	calcTrig();
 }
 
 void Ramp::setStartOnTop()
@@ -195,7 +195,7 @@ bool Ramp::clampBounds(glm::vec2 & position, const glm::vec2 & slope, const glm:
 	}
 	if(position.y > screenBounds.w) // Vertical maximum bound
 	{
-		position += glm::vec2(slope.x * ((position.y - screenBounds.w) / slope.y), (position.y - screenBounds.w));
+		position += glm::vec2(slope.x * ((screenBounds.w - position.y) / slope.y), (screenBounds.w - position.y));
 		ret = true;
 	}
 	return ret;
